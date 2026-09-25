@@ -1,0 +1,147 @@
+:root {
+  --bg: #0f1419;
+  --panel: #1a2129;
+  --border: #2a333d;
+  --text: #e6e9ec;
+  --muted: #8b96a1;
+  --accent: #2ecc71;
+  --accent-text: #0f1419;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+h2 {
+  font-size: 1rem;
+  margin: 0 0 12px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.header {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.logo {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 24px;
+}
+
+.game,
+.slip {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.game {
+  margin-bottom: 12px;
+}
+
+.game-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+
+.game-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.odds {
+  min-width: 72px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.odds:hover {
+  border-color: var(--accent);
+}
+
+.slip {
+  align-self: start;
+}
+
+.slip ul {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.slip li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.remove {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.place {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+
+.place:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.footer {
+  text-align: center;
+  padding: 24px;
+}
+
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "ld-sportsbook-demo",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace client",
+    "dev:server": "npm run dev --workspace server",
+    "build": "npm run build --workspace client",
+    "start": "npm run start --workspace server"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
