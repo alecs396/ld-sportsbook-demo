@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import express from "express";
 
 // Environment variables come from the repo-root .env file in local dev
@@ -31,6 +33,22 @@ app.get("/healthz", (req, res) => {
 app.get("/api/config", (req, res) => {
   res.json({ clientSideId: LD_CLIENT_SIDE_ID ?? null });
 });
+
+// Unknown API routes get a JSON 404 instead of falling through to index.html.
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
+
+// Production: serve the built React app so the whole app is one container.
+// In dev (`make dev`) client/dist usually doesn't exist and Vite serves the UI.
+const clientDist = path.resolve(import.meta.dirname, "../../client/dist");
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  // Any other path (e.g. /presenter) returns index.html and React renders it.
+  app.get("/{*splat}", (req, res) => {
+    res.sendFile(path.join(clientDist, "index.html"));
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
