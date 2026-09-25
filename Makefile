@@ -1,6 +1,6 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
-.PHONY: help install check-env dev build
+.PHONY: help install check-env dev build up down logs
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -20,3 +20,13 @@ dev: check-env ## Run server and client with hot reload (Ctrl+C stops both)
 
 build: ## Build the React app into client/dist
 	npm run build
+
+up: check-env ## Build and start the app in Docker (http://localhost:3000)
+	docker compose up --build -d
+	@echo "App: http://localhost:3000  (make logs to follow, make down to stop)"
+
+down: ## Stop and remove the Docker containers
+	docker compose down
+
+logs: ## Follow the app container logs
+	docker compose logs -f

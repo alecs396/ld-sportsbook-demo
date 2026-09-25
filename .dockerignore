@@ -1,0 +1,14 @@
+# Secrets: never bake keys into the image. Env vars are injected at runtime
+# (docker-compose env_file locally, Secret Manager on Cloud Run).
+.env*
+
+# Installed and built inside the image, never copied from the host
+**/node_modules
+client/dist
+
+# Not needed in the image
+.git
+.claude
+CLAUDE.md
+*.log
+.DS_Store
