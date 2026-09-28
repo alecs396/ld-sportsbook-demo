@@ -1,8 +1,27 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useInitializationStatus } from "@launchdarkly/react-sdk";
 import { games, formatOdds } from "./mockData.js";
 
 export default function App({ config }) {
   const [slip, setSlip] = useState([]);
+
+  // LaunchDarkly initialization status: "initializing" until the first flag
+  // values arrive, then "complete", "failed", or "timeout".
+  const { status, error } = useInitializationStatus();
+
+  // If LaunchDarkly could not initialize, the page still works: every flag
+  // uses its fallback value. Logged once per status change, not every render.
+  useEffect(() => {
+    if (status === "failed" || status === "timeout") {
+      console.warn(`LaunchDarkly did not initialize (${status}). Using fallback values.`, error);
+    }
+  }, [status, error]);
+
+  // Wait for real flag values before rendering the page, so it paints once
+  // with the right features instead of flickering from fallback values.
+  if (status === "initializing") {
+    return <p className="loading muted">Loading…</p>;
+  }
 
   function addToSlip(game, side) {
     const pick = game[side];
