@@ -1,21 +1,14 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-// LaunchDarkly React SDK. `createLDReactProvider` starts the client-side SDK
-// and returns a provider component that makes flags available to every
-// component inside it.
+// LaunchDarkly React SDK
 import { createLDReactProvider } from "@launchdarkly/react-sdk";
 import App from "./App.jsx";
 import "./App.css";
 
-// The LaunchDarkly context: who flags are evaluated for. The browser sends it
-// to LaunchDarkly, which evaluates every client-side flag for this context and
-// returns only the results (the targeting rules never reach the browser).
-// - `key` is stable, so the same user always gets the same bucket in
-//   percentage rollouts and experiments, and can be individually targeted.
-// - Custom attributes (state, tier, accountAgeDays, isInternal) are what
-//   targeting rules match on.
-// - `name` is private: usable for targeting, but LaunchDarkly never stores it.
-const context = {
+// Default customer context. The key stays the same across visits so
+// targeting and experiment bucketing are consistent. `name` is private, so
+// it can be used for targeting but isn't stored in LaunchDarkly.
+const customerContext = {
   kind: "user",
   key: "new-jersey-user",
   name: "Cody",
@@ -28,9 +21,27 @@ const context = {
   },
 };
 
-// Runtime config: ask the server for the LaunchDarkly client-side ID at
-// startup (see /api/config in server/src/index.js) instead of baking it into
-// the bundle at build time. One image works in every environment.
+// Internal QA tester. This key is individually targeted on "live-betting",
+// so QA can test in production before customers see it.
+const qaContext = {
+  kind: "user",
+  key: "qa-tester",
+  name: "Peter",
+  state: "NV",
+  tier: "VIP",
+  accountAgeDays: 365,
+  isInternal: true,
+  _meta: {
+    privateAttributes: ["name"],
+  },
+};
+
+// Open the app with ?as=qa to be the QA tester (testing in production).
+// The Phase 6 persona switcher replaces this.
+const asQa = new URLSearchParams(window.location.search).get("as") === "qa";
+const context = asQa ? qaContext : customerContext;
+
+// Get the client-side ID from the server at runtime (see /api/config)
 async function loadConfig() {
   try {
     const res = await fetch("/api/config");
@@ -45,9 +56,8 @@ async function main() {
   const config = await loadConfig();
   const root = createRoot(document.getElementById("root"));
 
-  // The browser SDK has no offline mode and throws without a client-side ID,
-  // so show a setup message instead of a blank page. (If the ID is set but
-  // LaunchDarkly is unreachable, the SDK serves fallback values instead.)
+  // The browser SDK can't start without an ID, so show a setup message
+  // instead of a blank page.
   if (!config.clientSideId) {
     root.render(
       <p className="setup-message">
@@ -58,9 +68,8 @@ async function main() {
     return;
   }
 
-  // Start the LaunchDarkly client before the first render, using the
-  // client-side ID from runtime config. Streaming is on explicitly: it keeps a
-  // connection open so flag changes reach the page with no reload.
+  // Start LaunchDarkly before the first render. Streaming pushes flag
+  // changes to the page without a reload.
   const LDProvider = createLDReactProvider(config.clientSideId, context, {
     ldOptions: { streaming: true },
   });
@@ -68,7 +77,7 @@ async function main() {
   root.render(
     <StrictMode>
       <LDProvider>
-        <App config={config} />
+        <App config={config} userKey={context.key} />
       </LDProvider>
     </StrictMode>,
   );

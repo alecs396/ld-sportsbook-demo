@@ -3,7 +3,7 @@ import { useBoolVariation, useInitializationStatus } from "@launchdarkly/react-s
 import { games, formatOdds } from "./mockData.js";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 
-export default function App({ config }) {
+export default function App({ config, userKey }) {
   const [slip, setSlip] = useState([]);
 
   // FLAG: create a boolean flag "live-betting",
@@ -12,20 +12,16 @@ export default function App({ config }) {
   // Defaults to false so live betting stays hidden if LaunchDarkly is down.
   const liveBettingEnabled = useBoolVariation("live-betting", false);
 
-  // LaunchDarkly initialization status: "initializing" until the first flag
-  // values arrive, then "complete", "failed", or "timeout".
   const { status, error } = useInitializationStatus();
 
-  // If LaunchDarkly could not initialize, the page still works: every flag
-  // uses its fallback value. Logged once per status change, not every render.
+  // If LaunchDarkly fails to start, the page still works on fallback values
   useEffect(() => {
     if (status === "failed" || status === "timeout") {
       console.warn(`LaunchDarkly did not initialize (${status}). Using fallback values.`, error);
     }
   }, [status, error]);
 
-  // Wait for real flag values before rendering the page, so it paints once
-  // with the right features instead of flickering from fallback values.
+  // Wait for real flag values so the page doesn't flicker
   if (status === "initializing") {
     return <p className="loading muted">Loading…</p>;
   }
@@ -53,6 +49,7 @@ export default function App({ config }) {
     <div className="app">
       <header className="header">
         <span className="logo">Kickoff Sportsbook</span>
+        <span className="muted">Signed in as {userKey}</span>
       </header>
 
       <main className="layout">
