@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useBoolVariation, useInitializationStatus, useLDClient } from "@launchdarkly/react-sdk";
 import { games, formatOdds } from "./mockData.js";
+import { ClassicBetSlip, NewBetSlip } from "./BetSlip.jsx";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 import Toast from "./Toast.jsx";
 
@@ -14,6 +15,12 @@ export default function App({ config, userKey }) {
   // The hook re-renders when the flag changes, so no page reload is needed.
   // Defaults to false so live betting stays hidden if LaunchDarkly is down.
   const liveBettingEnabled = useBoolVariation("live-betting", false);
+
+  // FLAG: create a boolean flag "new-bet-slip", available to client-side
+  // SDKs (see README). Targeted by state for Part 2 and used in the
+  // bet-placed experiment. Defaults to false, the classic slip, which is also
+  // the experiment's control.
+  const newBetSlipEnabled = useBoolVariation("new-bet-slip", false);
 
   const { status, error } = useInitializationStatus();
 
@@ -73,6 +80,13 @@ export default function App({ config, userKey }) {
     setSlip(slip.filter((item) => item.id !== id));
   }
 
+  // Both slips place bets the same way, so the experiment compares only the
+  // design. Phase 7: track("bet-placed") goes here.
+  function placeBet() {
+    setSlip([]);
+    setNotice("Bet placed. Good luck!");
+  }
+
   return (
     <div className="app">
       <header className="header">
@@ -104,30 +118,11 @@ export default function App({ config, userKey }) {
           ))}
         </section>
 
-        <aside className="slip">
-          <h2>Bet slip</h2>
-          {slip.length === 0 ? (
-            <p className="muted">Tap the odds to add a pick.</p>
-          ) : (
-            <ul>
-              {slip.map((item) => (
-                <li key={item.id}>
-                  <div>
-                    <strong>{item.team}</strong> {formatOdds(item.odds)}
-                    <div className="muted">{item.matchup}</div>
-                  </div>
-                  <button className="remove" onClick={() => removeFromSlip(item.id)} aria-label="Remove">
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {/* Phase 7: placing a bet sends track("bet-placed") for the experiment. */}
-          <button className="place" disabled={slip.length === 0}>
-            Place bet
-          </button>
-        </aside>
+        {newBetSlipEnabled ? (
+          <NewBetSlip slip={slip} onRemove={removeFromSlip} onPlaceBet={placeBet} />
+        ) : (
+          <ClassicBetSlip slip={slip} onRemove={removeFromSlip} onPlaceBet={placeBet} />
+        )}
       </main>
 
       <Toast message={notice} onClose={closeNotice} />

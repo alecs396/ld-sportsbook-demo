@@ -242,3 +242,62 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.slip-new {
+  border-color: var(--accent);
+}
+
+.payout {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.stakes {
+  margin: 12px 0 8px;
+}
+
+.stake-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.stake {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.stake.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.totals {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.totals .win {
+  color: var(--accent);
+}
+
+.slip-new .place {
+  margin-top: 10px;
+}
