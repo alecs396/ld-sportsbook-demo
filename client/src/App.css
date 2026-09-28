@@ -242,3 +242,138 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+.badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--accent);
+  color: var(--accent-text);
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+.slip-new {
+  border-color: var(--accent);
+}
+
+.payout {
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
+.stakes {
+  margin: 12px 0 8px;
+}
+
+.stake-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.stake {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.stake.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.totals {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.totals .win {
+  color: var(--accent);
+}
+
+.slip-new .place {
+  margin-top: 10px;
+}
+
+.persona select {
+  margin-left: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.presenter-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  max-width: 1100px;
+  margin: 24px auto;
+  padding: 0 24px;
+}
+
+.persona-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.persona-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  text-align: left;
+}
+
+.persona-button.active {
+  border-color: var(--accent);
+}
+
+.flag-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.flag-table th,
+.flag-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.flag-table .on {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.flag-table .off {
+  color: var(--muted);
+}
+
+.header a {
+  color: var(--muted);
+}
+
+@media (max-width: 760px) {
+  .presenter-body {
+    grid-template-columns: 1fr;
+  }
+}
