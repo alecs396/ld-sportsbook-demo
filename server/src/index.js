@@ -56,7 +56,7 @@ app.get("/healthz", (req, res) => {
 // instead of Vite baking the ID into the bundle at build time, so the same
 // image works in every environment.
 app.get("/api/config", (req, res) => {
-  res.json({ clientSideId: LD_CLIENT_SIDE_ID ?? null });
+  res.json({ clientSideId: LD_CLIENT_SIDE_ID || null });
 });
 
 // Unknown API routes get a JSON 404 instead of falling through to index.html.
