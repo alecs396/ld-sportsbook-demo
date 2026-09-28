@@ -1,6 +1,6 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
-.PHONY: help install check-env dev build up down logs
+.PHONY: help install check-env dev build up down logs fire-trigger
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
@@ -30,3 +30,16 @@ down: ## Stop and remove the Docker containers
 
 logs: ## Follow the app container logs
 	docker compose logs -f
+
+fire-trigger: check-env ## Turn off live-betting with its LaunchDarkly trigger (remediation)
+	@url=$$(grep '^LD_TRIGGER_URL=' .env | cut -d= -f2-); \
+	if [ -z "$$url" ] || [ "$$url" = "paste-your-trigger-url-here" ]; then \
+		echo "LD_TRIGGER_URL is not set in .env (see .env.example)"; exit 1; \
+	fi; \
+	code=$$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+		-d '{"eventName":"Manual remediation via make fire-trigger"}' "$$url"); \
+	if [ "$$code" -ge 200 ] && [ "$$code" -lt 300 ]; then \
+		echo "Trigger fired (HTTP $$code): live-betting targeting is now off."; \
+	else \
+		echo "Trigger failed (HTTP $$code). Check LD_TRIGGER_URL in .env."; exit 1; \
+	fi
