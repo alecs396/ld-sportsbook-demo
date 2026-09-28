@@ -1,84 +1,73 @@
 import fs from "node:fs";
 import path from "node:path";
 import express from "express";
-// LaunchDarkly server-side SDK. `init` creates the client that connects to
-// LaunchDarkly and evaluates flags locally in this process.
+// LaunchDarkly server-side SDK
 import { init } from "@launchdarkly/node-server-sdk";
 
-// Environment variables come from the repo-root .env file in local dev
-// (loaded by `node --env-file-if-exists`, see server/package.json) or are
-// injected by docker-compose / Cloud Run. See .env.example for the full list.
+// Env vars come from .env locally, or from docker-compose / Cloud Run.
+// See .env.example for the full list.
 const PORT = Number(process.env.PORT) || 3000;
 
-// The client-side ID is public: it is safe to send to the browser.
-// Never expose LD_SDK_KEY (server only) or LD_API_TOKEN through any endpoint.
+// The client-side ID is public, so it's fine to send to the browser.
+// Never expose LD_SDK_KEY or LD_API_TOKEN from an endpoint.
 const LD_CLIENT_SIDE_ID = process.env.LD_CLIENT_SIDE_ID;
 
 if (!LD_CLIENT_SIDE_ID) {
   console.warn("LD_CLIENT_SIDE_ID is not set. Copy .env.example to .env and fill it in.");
 }
 
-// SDK KEY: set LD_SDK_KEY in .env to your own environment's SDK key (see
-// .env.example). It is a secret: never hardcode it or send it to the browser.
+// SDK KEY: put your own SDK key in LD_SDK_KEY in .env (see .env.example).
+// It's a secret, so it stays on the server.
 const LD_SDK_KEY = process.env.LD_SDK_KEY;
 
 if (!LD_SDK_KEY) {
   console.warn("LD_SDK_KEY is not set. Flags will use their fallback values.");
 }
 
-// One LaunchDarkly client for the whole process, shared by every route.
-// On startup it opens a streaming connection, downloads this environment's
-// flag rules, and then evaluates flags in memory. Flag changes made in
-// LaunchDarkly are pushed down the stream within milliseconds.
-// Without a key, offline mode keeps the app running: every flag evaluation
-// returns its fallback value and nothing connects to LaunchDarkly.
+// One shared client for the whole server. It streams the flag rules in and
+// evaluates flags locally. With no key it runs offline on fallback values.
 const ldClient = init(LD_SDK_KEY ?? "", { offline: !LD_SDK_KEY });
 
 const app = express();
 app.use(express.json());
 
-// Health check for docker-compose, Cloud Run, and `make doctor`.
-// Stays "ok" even if LaunchDarkly is down: the app still serves fallback values.
+// Health check for Docker, Cloud Run, and `make doctor`. Stays "ok" if
+// LaunchDarkly is down since the app still works on fallback values.
 app.get("/healthz", (req, res) => {
   res.json({
     status: "ok",
     launchdarkly: {
-      // true once the SDK has received flag rules from LaunchDarkly. Offline
-      // mode also reports initialized, so it only counts when a key is set.
+      // Offline mode also reports initialized, so require a key too
       initialized: Boolean(LD_SDK_KEY) && ldClient.initialized(),
-      // true when no SDK key is set: every flag serves its fallback value.
       offline: !LD_SDK_KEY,
     },
   });
 });
 
-// Runtime config for the React app. The browser fetches this at startup
-// instead of Vite baking the ID into the bundle at build time, so the same
-// image works in every environment.
+// The React app fetches the client-side ID at startup instead of baking it
+// in at build time, so one image works in every environment.
 app.get("/api/config", (req, res) => {
   res.json({ clientSideId: LD_CLIENT_SIDE_ID || null });
 });
 
-// Unknown API routes get a JSON 404 instead of falling through to index.html.
+// Unknown API routes return a JSON 404 instead of index.html
 app.use("/api", (req, res) => {
   res.status(404).json({ error: "Not found" });
 });
 
-// Production: serve the built React app so the whole app is one container.
-// In dev (`make dev`) client/dist usually doesn't exist and Vite serves the UI.
+// In production, Express serves the built React app (one container).
+// In dev, Vite serves the UI instead.
 const clientDist = path.resolve(import.meta.dirname, "../../client/dist");
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
-  // Any other path (e.g. /presenter) returns index.html and React renders it.
+  // Let React handle any other path (e.g. /presenter)
   app.get("/{*splat}", (req, res) => {
     res.sendFile(path.join(clientDist, "index.html"));
   });
 }
 
-// Wait for the SDK to receive flag rules before accepting requests, so the
-// first requests get real flag values instead of fallbacks. The timeout keeps
-// a LaunchDarkly outage from blocking startup: the app starts anyway and every
-// evaluation returns its fallback value until the SDK connects.
+// Wait for the flag rules before taking traffic. The timeout means a
+// LaunchDarkly outage can't block startup: we start on fallback values.
 try {
   await ldClient.waitForInitialization({ timeout: 10 });
   if (LD_SDK_KEY) console.log("LaunchDarkly SDK initialized");
@@ -90,10 +79,8 @@ const server = app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
 });
 
-// Graceful shutdown on SIGTERM (docker stop, Cloud Run scale-down) and SIGINT
-// (Ctrl+C). The Node SDK does not send pending analytics events on exit by
-// itself, so flush them first (best effort), then close the LaunchDarkly
-// streaming connection and the HTTP server.
+// Clean shutdown for docker stop / Cloud Run (SIGTERM) and Ctrl+C (SIGINT).
+// The Node SDK doesn't flush analytics events on exit, so do it here first.
 async function shutdown(signal) {
   console.log(`${signal} received, shutting down`);
   try {

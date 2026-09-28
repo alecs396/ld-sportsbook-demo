@@ -12,6 +12,7 @@ CLAUDE.md
 .claude/
 .agents/
 skills-lock.json
+.mcp.json
 
 # OS and editor noise
 .DS_Store
