@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react";
-import { useBoolVariation, useInitializationStatus } from "@launchdarkly/react-sdk";
+import { useCallback, useEffect, useState } from "react";
+import { useBoolVariation, useInitializationStatus, useLDClient } from "@launchdarkly/react-sdk";
 import { games, formatOdds } from "./mockData.js";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
+import Toast from "./Toast.jsx";
 
 export default function App({ config, userKey }) {
   const [slip, setSlip] = useState([]);
+  const [notice, setNotice] = useState(null);
+  const closeNotice = useCallback(() => setNotice(null), []);
 
   // FLAG: create a boolean flag "live-betting",
   // available to client-side SDKs (see README).
@@ -13,6 +16,31 @@ export default function App({ config, userKey }) {
   const liveBettingEnabled = useBoolVariation("live-betting", false);
 
   const { status, error } = useInitializationStatus();
+
+  // Explicit listener for live-betting changes (Part 1). Streaming pushes the
+  // change and this shows a toast. The hook above already swaps the panel.
+  // The SDK also fires "change" at startup and when the stream reconnects,
+  // with the same value, so only notify when the value really changes.
+  const ldClient = useLDClient();
+
+  useEffect(() => {
+    if (status === "initializing") return;
+    let previous = ldClient.variation("live-betting", false);
+
+    const handleChange = () => {
+      const enabled = ldClient.variation("live-betting", false);
+      if (enabled === previous) return;
+      previous = enabled;
+      console.log(`[listener] live-betting changed to ${enabled}`);
+      setNotice(enabled ? "Live betting is now open." : "Live betting is paused.");
+    };
+
+    ldClient.on("change:live-betting", handleChange);
+
+    return () => {
+      ldClient.off("change:live-betting", handleChange);
+    };
+  }, [ldClient, status]);
 
   // If LaunchDarkly fails to start, the page still works on fallback values
   useEffect(() => {
@@ -101,6 +129,8 @@ export default function App({ config, userKey }) {
           </button>
         </aside>
       </main>
+
+      <Toast message={notice} onClose={closeNotice} />
 
       <footer className="footer muted">
         LaunchDarkly client-side ID: {config.clientSideId ? "loaded" : "missing (check .env)"}

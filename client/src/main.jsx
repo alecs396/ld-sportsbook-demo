@@ -28,7 +28,7 @@ const qaContext = {
   key: "qa-tester",
   name: "Peter",
   state: "NV",
-  tier: "VIP",
+  tier: "vip",
   accountAgeDays: 365,
   isInternal: true,
   _meta: {
