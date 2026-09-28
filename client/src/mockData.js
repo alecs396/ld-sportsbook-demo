@@ -26,3 +26,18 @@ export const games = [
 export function formatOdds(odds) {
   return odds > 0 ? `+${odds}` : `${odds}`;
 }
+
+// Mock in-game data for the live betting panel (flag "live-betting").
+export const liveGame = {
+  id: "sb-live",
+  league: "Championship",
+  clock: "Q3 08:42",
+  away: { team: "Kansas City", score: 17, odds: 140 },
+  home: { team: "Philadelphia", score: 20, odds: -165 },
+  nextScore: [
+    { id: "kc-td", label: "Kansas City touchdown", odds: 175 },
+    { id: "kc-fg", label: "Kansas City field goal", odds: 320 },
+    { id: "phi-td", label: "Philadelphia touchdown", odds: 190 },
+    { id: "phi-fg", label: "Philadelphia field goal", odds: 300 },
+  ],
+};

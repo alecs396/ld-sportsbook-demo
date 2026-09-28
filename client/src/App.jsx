@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
 import { useInitializationStatus } from "@launchdarkly/react-sdk";
 import { games, formatOdds } from "./mockData.js";
+import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 
 export default function App({ config }) {
   const [slip, setSlip] = useState([]);
+
+  // TODO(Alec) 5: Evaluate the "live-betting" flag for the current context.
+  // Hints:
+  //   - One typed hook from the React SDK for a boolean flag, imported like
+  //     useInitializationStatus above. Arguments: the flag key and a fallback.
+  //   - Pick the fallback deliberately: what should customers see if
+  //     LaunchDarkly is unreachable or the flag doesn't exist?
+  //   - Add the reviewer comment the take-home asks for, e.g.
+  //     // FLAG: "live-betting" must exist in your LaunchDarkly project (see README)
+  //   - It's a hook, so keep it up here, before the early return below.
+  // Docs: https://launchdarkly.com/docs/sdk/client-side/react/react-web#single-flag-hooks
+  const liveBettingEnabled = false;
 
   // LaunchDarkly initialization status: "initializing" until the first flag
   // values arrive, then "complete", "failed", or "timeout".
@@ -23,14 +36,19 @@ export default function App({ config }) {
     return <p className="loading muted">Loading…</p>;
   }
 
+  // Adds a pick ({ id, matchup, team, odds }) to the slip, ignoring duplicates.
+  function addPick(pick) {
+    if (slip.some((item) => item.id === pick.id)) return;
+    setSlip([...slip, pick]);
+  }
+
   function addToSlip(game, side) {
-    const pick = game[side];
-    const id = `${game.id}-${side}`;
-    if (slip.some((item) => item.id === id)) return;
-    setSlip([
-      ...slip,
-      { id, matchup: `${game.away.team} @ ${game.home.team}`, team: pick.team, odds: pick.odds },
-    ]);
+    addPick({
+      id: `${game.id}-${side}`,
+      matchup: `${game.away.team} @ ${game.home.team}`,
+      team: game[side].team,
+      odds: game[side].odds,
+    });
   }
 
   function removeFromSlip(id) {
@@ -45,7 +63,8 @@ export default function App({ config }) {
 
       <main className="layout">
         <section className="games">
-          {/* Phase 2: the live betting panel (flag "live-betting") renders here. */}
+          {/* New live betting panel when the flag is on, old teaser when off. */}
+          {liveBettingEnabled ? <LiveBettingPanel onPick={addPick} /> : <LiveBettingTeaser />}
 
           <h2>Featured games</h2>
           {games.map((game) => (
