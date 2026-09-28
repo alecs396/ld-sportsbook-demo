@@ -51,6 +51,12 @@ app.get("/api/config", (req, res) => {
   res.json({ clientSideId: LD_CLIENT_SIDE_ID || null });
 });
 
+// Demo personas for the browser's persona switcher (same list the
+// simulator uses), so contexts are defined in one place.
+app.get("/api/personas", (req, res) => {
+  res.json(Object.values(personas));
+});
+
 // Demo-only "bug" for the remediation demo: when outage mode is on, the live
 // odds code path fails most of the time. Toggled by `make simulate-outage`.
 // Not authenticated, so don't expose it on a public deploy as-is.

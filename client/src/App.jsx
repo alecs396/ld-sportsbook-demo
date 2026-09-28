@@ -5,9 +5,10 @@ import { ClassicBetSlip, NewBetSlip } from "./BetSlip.jsx";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 import Toast from "./Toast.jsx";
 
-export default function App({ config, userKey }) {
+export default function App({ config, personas, initialPersonaKey, storageKey }) {
   const [slip, setSlip] = useState([]);
   const [notice, setNotice] = useState(null);
+  const [personaKey, setPersonaKey] = useState(initialPersonaKey);
   const closeNotice = useCallback(() => setNotice(null), []);
 
   // FLAG: create a boolean flag "live-betting",
@@ -80,6 +81,28 @@ export default function App({ config, userKey }) {
     setSlip(slip.filter((item) => item.id !== id));
   }
 
+  // Persona switcher: become a different demo customer without a reload.
+  async function switchPersona(key) {
+    const persona = personas.find((p) => p.key === key);
+    if (!persona) return;
+
+    // Switch the LaunchDarkly context so every flag is re-evaluated for this
+    // persona. Hooks re-render with the new values, no page reload.
+    try {
+      await ldClient.identify(persona);
+    } catch (err) {
+      console.error(`Could not switch LaunchDarkly context to ${key}`, err);
+    }
+
+    setPersonaKey(key);
+    setSlip([]);
+    try {
+      localStorage.setItem(storageKey, key);
+    } catch {
+      // Remembering the persona is a convenience; ignore blocked storage.
+    }
+  }
+
   // Both slips place bets the same way, so the experiment compares only the
   // design. Phase 7: track("bet-placed") goes here.
   function placeBet() {
@@ -91,7 +114,16 @@ export default function App({ config, userKey }) {
     <div className="app">
       <header className="header">
         <span className="logo">Kickoff Sportsbook</span>
-        <span className="muted">Signed in as {userKey}</span>
+        <label className="persona muted">
+          Signed in as{" "}
+          <select value={personaKey} onChange={(e) => switchPersona(e.target.value)}>
+            {personas.map((p) => (
+              <option key={p.key} value={p.key}>
+                {p.name} ({p.state}, {p.tier}{p.isInternal ? ", QA" : ""})
+              </option>
+            ))}
+          </select>
+        </label>
       </header>
 
       <main className="layout">

@@ -301,3 +301,13 @@ button {
 .slip-new .place {
   margin-top: 10px;
 }
+
+.persona select {
+  margin-left: 6px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
