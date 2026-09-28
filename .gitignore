@@ -7,9 +7,11 @@ dist/
 .env.*
 !.env.example
 
-# Local assistant files, never pushed
+# Local AI assistant files and skills, never pushed
 CLAUDE.md
 .claude/
+.agents/
+skills-lock.json
 
 # OS and editor noise
 .DS_Store
