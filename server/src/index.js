@@ -3,6 +3,7 @@ import path from "node:path";
 import express from "express";
 // LaunchDarkly server-side SDK
 import { init } from "@launchdarkly/node-server-sdk";
+import { personas } from "../personas.js";
 
 // Env vars come from .env locally, or from docker-compose / Cloud Run.
 // See .env.example for the full list.
@@ -48,6 +49,30 @@ app.get("/healthz", (req, res) => {
 // in at build time, so one image works in every environment.
 app.get("/api/config", (req, res) => {
   res.json({ clientSideId: LD_CLIENT_SIDE_ID || null });
+});
+
+// Live betting API. The caller says who they are with the x-user-key header
+// (a persona key from personas.js), standing in for a real login.
+app.get("/api/live/odds", async (req, res) => {
+  const context = personas[req.get("x-user-key")];
+  if (!context) {
+    return res.status(400).json({ error: "Unknown or missing x-user-key" });
+  }
+
+  // FLAG: same "live-betting" flag the React app uses (see README).
+  // The server checks it too, for this caller's context, since hiding the
+  // panel in the browser doesn't stop someone calling the API directly.
+  // Defaults to false so the API stays closed if LaunchDarkly is down.
+  const liveBettingEnabled = await ldClient.variation("live-betting", context, false);
+  if (!liveBettingEnabled) {
+    return res.status(403).json({ error: "Live betting is not available" });
+  }
+
+  res.json({
+    game: "Kansas City @ Philadelphia",
+    clock: "Q3 08:42",
+    odds: { "Kansas City": 140, Philadelphia: -165 },
+  });
 });
 
 // Unknown API routes return a JSON 404 instead of index.html
