@@ -1,9 +1,9 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
-.PHONY: help install check-env dev build up down logs fire-trigger
+.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage
 
 help: ## List available commands
-	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install all npm dependencies (client and server)
 	npm install
@@ -43,3 +43,9 @@ fire-trigger: check-env ## Turn off live-betting with its LaunchDarkly trigger (
 	else \
 		echo "Trigger failed (HTTP $$code). Check LD_TRIGGER_URL in .env."; exit 1; \
 	fi
+
+simulate: check-env ## Send fake bettor traffic to the running app (Ctrl+C stops)
+	node --env-file-if-exists=.env simulator/index.js
+
+simulate-outage: check-env ## Same, with the live odds bug on; auto-fires the trigger
+	node --env-file-if-exists=.env simulator/index.js --outage
