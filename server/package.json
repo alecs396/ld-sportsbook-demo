@@ -8,6 +8,7 @@
     "start": "node --env-file-if-exists=../.env src/index.js"
   },
   "dependencies": {
+    "@launchdarkly/node-server-sdk": "^9.13.7",
     "express": "^5.2.1"
   }
 }
