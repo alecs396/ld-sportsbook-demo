@@ -4,6 +4,7 @@ import { games, formatOdds } from "./mockData.js";
 import { ClassicBetSlip, NewBetSlip } from "./BetSlip.jsx";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 import Toast from "./Toast.jsx";
+import { DEMO_CHANNEL } from "./Presenter.jsx";
 
 export default function App({ config, personas, initialPersonaKey, storageKey }) {
   const [slip, setSlip] = useState([]);
@@ -24,6 +25,15 @@ export default function App({ config, personas, initialPersonaKey, storageKey })
   const newBetSlipEnabled = useBoolVariation("new-bet-slip", false);
 
   const { status, error } = useInitializationStatus();
+
+  // The presenter panel (/presenter) can switch this tab's persona.
+  useEffect(() => {
+    const channel = new BroadcastChannel(DEMO_CHANNEL);
+    channel.onmessage = (event) => {
+      if (event.data?.type === "persona") switchPersona(event.data.key);
+    };
+    return () => channel.close();
+  }, []);
 
   // Explicit listener for live-betting changes (Part 1). Streaming pushes the
   // change and this shows a toast. The hook above already swaps the panel.

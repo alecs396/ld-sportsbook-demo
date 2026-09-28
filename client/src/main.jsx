@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 // LaunchDarkly React SDK
 import { createLDReactProvider } from "@launchdarkly/react-sdk";
 import App from "./App.jsx";
+import Presenter from "./Presenter.jsx";
 import "./App.css";
 
 const DEFAULT_PERSONA = "new-jersey-user";
@@ -61,14 +62,20 @@ async function main() {
 
   // Start LaunchDarkly before the first render. Streaming pushes flag
   // changes to the page without a reload.
+  // The presenter panel also asks for evaluation reasons (why each value).
+  const isPresenter = window.location.pathname === "/presenter";
   const LDProvider = createLDReactProvider(config.clientSideId, context, {
-    ldOptions: { streaming: true },
+    ldOptions: { streaming: true, withReasons: isPresenter },
   });
 
   root.render(
     <StrictMode>
       <LDProvider>
-        <App config={config} personas={personas} initialPersonaKey={startKey} storageKey={STORAGE_KEY} />
+        {isPresenter ? (
+          <Presenter personas={personas} initialPersonaKey={startKey} />
+        ) : (
+          <App config={config} personas={personas} initialPersonaKey={startKey} storageKey={STORAGE_KEY} />
+        )}
       </LDProvider>
     </StrictMode>,
   );
