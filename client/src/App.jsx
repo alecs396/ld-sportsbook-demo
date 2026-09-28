@@ -1,22 +1,16 @@
 import { useEffect, useState } from "react";
-import { useInitializationStatus } from "@launchdarkly/react-sdk";
+import { useBoolVariation, useInitializationStatus } from "@launchdarkly/react-sdk";
 import { games, formatOdds } from "./mockData.js";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 
 export default function App({ config }) {
   const [slip, setSlip] = useState([]);
 
-  // TODO(Alec) 5: Evaluate the "live-betting" flag for the current context.
-  // Hints:
-  //   - One typed hook from the React SDK for a boolean flag, imported like
-  //     useInitializationStatus above. Arguments: the flag key and a fallback.
-  //   - Pick the fallback deliberately: what should customers see if
-  //     LaunchDarkly is unreachable or the flag doesn't exist?
-  //   - Add the reviewer comment the take-home asks for, e.g.
-  //     // FLAG: "live-betting" must exist in your LaunchDarkly project (see README)
-  //   - It's a hook, so keep it up here, before the early return below.
-  // Docs: https://launchdarkly.com/docs/sdk/client-side/react/react-web#single-flag-hooks
-  const liveBettingEnabled = false;
+  // FLAG: create a boolean flag "live-betting",
+  // available to client-side SDKs (see README).
+  // The hook re-renders when the flag changes, so no page reload is needed.
+  // Defaults to false so live betting stays hidden if LaunchDarkly is down.
+  const liveBettingEnabled = useBoolVariation("live-betting", false);
 
   // LaunchDarkly initialization status: "initializing" until the first flag
   // values arrive, then "complete", "failed", or "timeout".
