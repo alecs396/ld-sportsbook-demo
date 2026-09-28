@@ -1,17 +1,44 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useBoolVariation, useInitializationStatus } from "@launchdarkly/react-sdk";
 import { games, formatOdds } from "./mockData.js";
+import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 
-export default function App({ config }) {
+export default function App({ config, userKey }) {
   const [slip, setSlip] = useState([]);
 
+  // FLAG: create a boolean flag "live-betting",
+  // available to client-side SDKs (see README).
+  // The hook re-renders when the flag changes, so no page reload is needed.
+  // Defaults to false so live betting stays hidden if LaunchDarkly is down.
+  const liveBettingEnabled = useBoolVariation("live-betting", false);
+
+  const { status, error } = useInitializationStatus();
+
+  // If LaunchDarkly fails to start, the page still works on fallback values
+  useEffect(() => {
+    if (status === "failed" || status === "timeout") {
+      console.warn(`LaunchDarkly did not initialize (${status}). Using fallback values.`, error);
+    }
+  }, [status, error]);
+
+  // Wait for real flag values so the page doesn't flicker
+  if (status === "initializing") {
+    return <p className="loading muted">Loading…</p>;
+  }
+
+  // Adds a pick ({ id, matchup, team, odds }) to the slip, ignoring duplicates.
+  function addPick(pick) {
+    if (slip.some((item) => item.id === pick.id)) return;
+    setSlip([...slip, pick]);
+  }
+
   function addToSlip(game, side) {
-    const pick = game[side];
-    const id = `${game.id}-${side}`;
-    if (slip.some((item) => item.id === id)) return;
-    setSlip([
-      ...slip,
-      { id, matchup: `${game.away.team} @ ${game.home.team}`, team: pick.team, odds: pick.odds },
-    ]);
+    addPick({
+      id: `${game.id}-${side}`,
+      matchup: `${game.away.team} @ ${game.home.team}`,
+      team: game[side].team,
+      odds: game[side].odds,
+    });
   }
 
   function removeFromSlip(id) {
@@ -22,11 +49,13 @@ export default function App({ config }) {
     <div className="app">
       <header className="header">
         <span className="logo">Kickoff Sportsbook</span>
+        <span className="muted">Signed in as {userKey}</span>
       </header>
 
       <main className="layout">
         <section className="games">
-          {/* Phase 2: the live betting panel (flag "live-betting") renders here. */}
+          {/* New live betting panel when the flag is on, old teaser when off. */}
+          {liveBettingEnabled ? <LiveBettingPanel onPick={addPick} /> : <LiveBettingTeaser />}
 
           <h2>Featured games</h2>
           {games.map((game) => (
