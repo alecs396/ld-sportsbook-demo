@@ -1,6 +1,7 @@
 // Restores the demo's starting state in LaunchDarkly (and turns off the app's
 // outage mode). Only patches what differs, so running it twice is a no-op.
 // Run with `make demo-reset`. See docs/demo-runbook.md for the starting state.
+import { pathToFileURL } from "node:url";
 import { api, ENVIRONMENT, PROJECT, RESOURCES, variationId, variationValue } from "./lib/ld.js";
 
 const COMMENT = "make demo-reset: restore demo starting state";
@@ -190,18 +191,25 @@ async function resetApp() {
   }
 }
 
-async function main() {
-  if (!process.env.LD_API_TOKEN) {
-    console.error("LD_API_TOKEN is not set (see .env.example)");
-    process.exit(1);
-  }
+// Also used by bootstrap, so both agree on the starting state. Returns the error count.
+export async function resetDemo() {
   console.log(`Resetting demo state in "${PROJECT}" / "${ENVIRONMENT}"`);
   await resetLiveBetting();
   await resetNewBetSlip();
   await resetBetAssistant();
   await resetApp();
-  console.log(errors ? `\n${errors} error(s). Run make doctor for details.` : "\nDone. Run make doctor to confirm.");
-  if (errors) process.exit(1);
+  return errors;
 }
 
-main();
+async function main() {
+  if (!process.env.LD_API_TOKEN) {
+    console.error("LD_API_TOKEN is not set (see .env.example)");
+    process.exit(1);
+  }
+  const count = await resetDemo();
+  console.log(count ? `\n${count} error(s). Run make doctor for details.` : "\nDone. Run make doctor to confirm.");
+  if (count) process.exit(1);
+}
+
+// Only run when called directly (make demo-reset), not when imported.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) main();
