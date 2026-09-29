@@ -114,8 +114,11 @@ export default function App({ config, personas, initialPersonaKey, storageKey })
   }
 
   // Both slips place bets the same way, so the experiment compares only the
-  // design. Phase 7: track("bet-placed") goes here.
+  // design.
   function placeBet() {
+    // Conversion for the "bet-placed" metric in the new-bet-slip experiment.
+    // Both slips call this, so they're measured the same way.
+    ldClient.track("bet-placed", { picks: slip.length }, slip.length);
     setSlip([]);
     setNotice("Bet placed. Good luck!");
   }
