@@ -27,6 +27,10 @@ RUN npm ci --omit=dev --workspace server && npm cache clean --force
 COPY server/ server/
 COPY --from=build /app/client/dist client/dist
 
+# Demo scripts and simulators, so make doctor/bootstrap/simulate work without Node on the host
+COPY scripts/ scripts/
+COPY simulator/ simulator/
+
 # The official Node image ships an unprivileged "node" user
 USER node
 EXPOSE 3000

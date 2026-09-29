@@ -1,5 +1,16 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
+
+# Scripts and simulators run with local Node when it's installed. Without Node
+# (or with DOCKER=1) they run inside the app image, so Docker is all you need.
+# In Docker the app is reachable at http://app:3000 on the compose network, and
+# overrides like SIM_BETTORS=10 are passed through from your shell.
+ifeq ($(or $(DOCKER),$(if $(shell command -v node 2>/dev/null),,missing)),)
+RUN_NODE = node --env-file-if-exists=.env
+else
+RUN_NODE = docker compose run --rm --no-deps -v "$(CURDIR)/.env:/app/.env" -e SIM_BASE_URL=http://app:3000 \
+	-e LD_PROJECT_KEY -e LD_ENVIRONMENT -e SIM_BETTORS -e SIM_FIRST_BETTOR -e SIM_CHATS app node
+endif
 .PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets simulate-chat doctor demo-reset bootstrap
 
 help: ## List available commands
@@ -45,23 +56,23 @@ fire-trigger: check-env ## Turn off live-betting with its LaunchDarkly trigger (
 	fi
 
 simulate: check-env ## Send fake bettor traffic to the running app (Ctrl+C stops)
-	node --env-file-if-exists=.env simulator/index.js
+	$(RUN_NODE) simulator/index.js
 
 simulate-outage: check-env ## Same, with the live odds bug on; auto-fires the trigger
-	node --env-file-if-exists=.env simulator/index.js --outage
+	$(RUN_NODE) simulator/index.js --outage
 
 simulate-bets: check-env ## Experiment traffic: 500 simulated bettors see a slip, some place bets
-	node --env-file-if-exists=.env simulator/bets.js
+	$(RUN_NODE) simulator/bets.js
 
 simulate-chat: check-env ## Bet assistant traffic: 20 simulated chats with thumbs up/down (calls Claude, ~$0.03)
-	node --env-file-if-exists=.env simulator/chat.js
+	$(RUN_NODE) simulator/chat.js
 
 doctor: check-env ## Pre-flight check: env vars, LaunchDarkly access, resources, demo starting state
-	node --env-file-if-exists=.env scripts/doctor.js
+	$(RUN_NODE) scripts/doctor.js
 
 demo-reset: check-env ## Restore the demo's starting state in LaunchDarkly (safe to run repeatedly)
-	node --env-file-if-exists=.env scripts/demo-reset.js
+	$(RUN_NODE) scripts/demo-reset.js
 
 bootstrap: ## Create all LaunchDarkly resources in LD_PROJECT_KEY (needs only LD_API_TOKEN; safe to rerun)
 	@test -f .env || cp .env.example .env
-	node --env-file-if-exists=.env scripts/bootstrap.js
+	$(RUN_NODE) scripts/bootstrap.js
