@@ -45,3 +45,28 @@ export const personas = {
     _meta: privateName,
   },
 };
+
+// Simulated bettors for the experiment ("bettor-1", "bettor-2", ...). Each
+// one always gets the same attributes from its number, so its context is
+// stable across visits. Four in five are in NJ or NV (the experiment's rule).
+const BETTOR_STATES = ["NJ", "NV", "NJ", "NV", "CA"];
+
+function simulatedBettor(key) {
+  const match = /^bettor-(\d+)$/.exec(key);
+  if (!match) return null;
+  const n = Number(match[1]);
+  return {
+    kind: "user",
+    key,
+    state: BETTOR_STATES[n % BETTOR_STATES.length],
+    tier: n % 10 === 0 ? "vip" : "standard",
+    accountAgeDays: 1 + ((n * 37) % 900),
+    isInternal: false,
+  };
+}
+
+// The LaunchDarkly context for a persona or simulated bettor key, or null.
+export function contextFor(key) {
+  if (!key) return null;
+  return personas[key] ?? simulatedBettor(key);
+}
