@@ -3,7 +3,7 @@ import path from "node:path";
 import express from "express";
 // LaunchDarkly server-side SDK
 import { init } from "@launchdarkly/node-server-sdk";
-import { personas } from "../personas.js";
+import { contextFor, personas } from "../personas.js";
 
 // Env vars come from .env locally, or from docker-compose / Cloud Run.
 // See .env.example for the full list.
@@ -76,7 +76,7 @@ app.post("/api/demo/outage", (req, res) => {
 // Live betting API. The caller says who they are with the x-user-key header
 // (a persona key from personas.js), standing in for a real login.
 app.get("/api/live/odds", async (req, res) => {
-  const context = personas[req.get("x-user-key")];
+  const context = contextFor(req.get("x-user-key"));
   if (!context) {
     return res.status(400).json({ error: "Unknown or missing x-user-key" });
   }
@@ -102,6 +102,34 @@ app.get("/api/live/odds", async (req, res) => {
     clock: "Q3 08:42",
     odds: { "Kansas City": 140, Philadelphia: -165 },
   });
+});
+
+// Bet slip for the simulator: which slip does this bettor see? This is the
+// experiment's exposure, evaluated on the server for simulated bettors.
+app.get("/api/bet-slip", async (req, res) => {
+  const context = contextFor(req.get("x-user-key"));
+  if (!context) {
+    return res.status(400).json({ error: "Unknown or missing x-user-key" });
+  }
+  // FLAG: "new-bet-slip" (see README). Server-side evaluation for simulated
+  // bettors, which is their exposure in the experiment.
+  const newBetSlipEnabled = await ldClient.variation("new-bet-slip", context, false);
+
+  res.json({ newBetSlip: newBetSlipEnabled });
+});
+
+// Place a bet for the simulator. This is the experiment's conversion.
+app.post("/api/bets", (req, res) => {
+  const context = contextFor(req.get("x-user-key"));
+  if (!context) {
+    return res.status(400).json({ error: "Unknown or missing x-user-key" });
+  }
+  const picks = Number(req.body?.picks) || 1;
+
+  // Conversion for the "bet-placed" metric, same event as the browser sends.
+  ldClient.track("bet-placed", context, { picks }, picks);
+
+  res.status(201).json({ placed: true, picks });
 });
 
 // Unknown API routes return a JSON 404 instead of index.html
