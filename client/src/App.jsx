@@ -4,6 +4,7 @@ import { games, formatOdds } from "./mockData.js";
 import { ClassicBetSlip, NewBetSlip } from "./BetSlip.jsx";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 import Toast from "./Toast.jsx";
+import ChatWidget from "./ChatWidget.jsx";
 import { DEMO_CHANNEL } from "./Presenter.jsx";
 
 export default function App({ config, personas, initialPersonaKey, storageKey }) {
@@ -171,6 +172,7 @@ export default function App({ config, personas, initialPersonaKey, storageKey })
       </main>
 
       <Toast message={notice} onClose={closeNotice} />
+      <ChatWidget userKey={personaKey} />
 
       <footer className="footer muted">
         LaunchDarkly client-side ID: {config.clientSideId ? "loaded" : "missing (check .env)"}

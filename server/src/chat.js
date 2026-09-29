@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { initAi } from "@launchdarkly/server-sdk-ai";
+import { initAi, LDFeedbackKind } from "@launchdarkly/server-sdk-ai";
 import { contextFor } from "../personas.js";
 
 // AI CONFIG: create a completion-mode AgentControl config "bet-assistant" in
@@ -10,8 +10,8 @@ const MAX_MESSAGE_LENGTH = 500;
 // Anthropic key stays on the server. Without it the assistant says it isn't set up.
 const anthropic = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
 
-// Remembers which variation produced each reply, so thumbs up/down (added
-// next) is credited to the right prompt. In memory only; fine for a demo.
+// Remembers each reply's tracker token and bettor, so thumbs up/down is
+// credited to the variation that wrote it. In memory only; fine for a demo.
 export const recentReplies = new Map();
 const MAX_REMEMBERED = 500;
 
@@ -86,12 +86,30 @@ export function addChatRoutes(app, ldClient) {
       const trackData = tracker.getTrackData();
 
       const responseId = crypto.randomUUID();
-      remember(responseId, { context, trackData });
+      remember(responseId, { context, resumptionToken: tracker.resumptionToken });
       res.json({ reply: text, variation: trackData.variationKey ?? null, responseId });
     } catch (err) {
       tracker.trackError();
       console.error(`Bet assistant call failed: ${err.message}`);
       res.status(502).json({ error: "The bet assistant had a problem. Try again." });
     }
+  });
+
+  // Thumbs up/down on a reply. The browser only sends the responseId, so
+  // feedback always goes to the bettor and variation that produced the reply.
+  app.post("/api/chat/feedback", (req, res) => {
+    const entry = recentReplies.get(req.body?.responseId);
+    if (!entry) {
+      return res.status(404).json({ error: "Unknown or already rated reply" });
+    }
+    const positive = req.body?.positive === true;
+
+    // Credit the thumbs up/down to the variation that wrote this reply, as part
+    // of the same run as its duration and token metrics.
+    const tracker = aiClient.createTracker(entry.resumptionToken, entry.context);
+    tracker.trackFeedback({ kind: positive ? LDFeedbackKind.Positive : LDFeedbackKind.Negative });
+
+    recentReplies.delete(req.body.responseId);
+    res.json({ recorded: true, positive });
   });
 }
