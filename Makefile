@@ -1,6 +1,6 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
-.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets simulate-chat
+.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets simulate-chat doctor demo-reset bootstrap
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -55,3 +55,13 @@ simulate-bets: check-env ## Experiment traffic: 500 simulated bettors see a slip
 
 simulate-chat: check-env ## Bet assistant traffic: 20 simulated chats with thumbs up/down (calls Claude, ~$0.03)
 	node --env-file-if-exists=.env simulator/chat.js
+
+doctor: check-env ## Pre-flight check: env vars, LaunchDarkly access, resources, demo starting state
+	node --env-file-if-exists=.env scripts/doctor.js
+
+demo-reset: check-env ## Restore the demo's starting state in LaunchDarkly (safe to run repeatedly)
+	node --env-file-if-exists=.env scripts/demo-reset.js
+
+bootstrap: ## Create all LaunchDarkly resources in LD_PROJECT_KEY (needs only LD_API_TOKEN; safe to rerun)
+	@test -f .env || cp .env.example .env
+	node --env-file-if-exists=.env scripts/bootstrap.js
