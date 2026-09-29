@@ -1,6 +1,6 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
-.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets
+.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets simulate-chat
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -52,3 +52,6 @@ simulate-outage: check-env ## Same, with the live odds bug on; auto-fires the tr
 
 simulate-bets: check-env ## Experiment traffic: 500 simulated bettors see a slip, some place bets
 	node --env-file-if-exists=.env simulator/bets.js
+
+simulate-chat: check-env ## Bet assistant traffic: 20 simulated chats with thumbs up/down (calls Claude, ~$0.03)
+	node --env-file-if-exists=.env simulator/chat.js
