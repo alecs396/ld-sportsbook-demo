@@ -4,6 +4,7 @@ import express from "express";
 // LaunchDarkly server-side SDK
 import { init } from "@launchdarkly/node-server-sdk";
 import { contextFor, personas } from "../personas.js";
+import { addChatRoutes } from "./chat.js";
 
 // Env vars come from .env locally, or from docker-compose / Cloud Run.
 // See .env.example for the full list.
@@ -131,6 +132,9 @@ app.post("/api/bets", (req, res) => {
 
   res.status(201).json({ placed: true, picks });
 });
+
+// Bet assistant chatbot (AgentControl config), see chat.js
+addChatRoutes(app, ldClient);
 
 // Unknown API routes return a JSON 404 instead of index.html
 app.use("/api", (req, res) => {

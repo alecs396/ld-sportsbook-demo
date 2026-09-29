@@ -8,7 +8,9 @@
     "start": "node --env-file-if-exists=../.env src/index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
     "@launchdarkly/node-server-sdk": "^9.13.7",
+    "@launchdarkly/server-sdk-ai": "^2.0.8",
     "express": "^5.2.1"
   }
 }
