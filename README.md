@@ -84,6 +84,9 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 
 ## Setup
 
+> [!IMPORTANT]
+> Everything in this demo happens in the **Production** environment of your LaunchDarkly project: the setup scripts, the keys in `.env`, and every flag change you make during the demo. In the LaunchDarkly UI, check the environment selector shows **Production** before changing anything.
+
 ### 1. Clone the repo
 
 ```bash
@@ -190,9 +193,15 @@ Then open three windows side by side:
 2. **QA tester:** <http://localhost:3000/?as=qa-tester>
 3. **Presenter panel:** <http://localhost:3000/presenter> (clicking a persona here also switches the customer window)
 
-Keep LaunchDarkly open in a fourth window with the **Production** environment selected.
+Keep LaunchDarkly open in a fourth window.
+
+> [!IMPORTANT]
+> **Stay in the Production environment for the whole demo.** The app uses Production's keys, so it only reacts to changes made in Production. If you change a flag while the LaunchDarkly UI is showing Test (or any other environment), nothing changes in the app. Check the environment selector says **Production** before every change.
 
 ### Part 1: release and remediate (`live-betting`)
+
+_In LaunchDarkly, make sure you're in the **Production** environment._
+
 
 1. **Ship dark.** `live-betting` targeting is off: everyone sees "Live betting is coming soon."
 2. **Test in production.** Turn targeting **on**. `qa-tester` (Peter) is individually targeted, so only QA sees the LIVE panel. Customers still see the teaser.
@@ -220,6 +229,9 @@ Keep LaunchDarkly open in a fourth window with the **Production** environment se
 
 ### Part 2: targeting (`new-bet-slip`)
 
+_In LaunchDarkly, make sure you're in the **Production** environment._
+
+
 Switch personas with the dropdown in the header or the presenter panel. Each switch calls `identify()`, so flags re-evaluate with no reload.
 
 | Persona | Context | Bet slip | Why |
@@ -232,6 +244,9 @@ Switch personas with the dropdown in the header or the presenter panel. Each swi
 The presenter panel shows the evaluation reason for each value (Individual target, Rule 1, Default rule).
 
 ### Extra credit: experiment
+
+_In LaunchDarkly, make sure you're in the **Production** environment._
+
 
 The experiment "New bet slip vs classic" runs on the **Legal live-betting states** rule of `new-bet-slip`, with the `bet-placed` metric. Both slips send `track("bet-placed")` from the same function, so only the design differs.
 
@@ -249,6 +264,9 @@ The experiment "New bet slip vs classic" runs on the **Legal live-betting states
 > **The experiment data is simulated.** The simulator converts bettors at 25% on the classic slip and 40% on the new slip, so the experiment has a clear result to find. It demonstrates the setup (exposures and conversions joined by stable context keys, analyzed by LaunchDarkly), not real customer behavior. In my run: classic 25.8% vs new 43.5%, a 68% relative lift, statistically significant.
 
 ### Extra credit: AI Configs (bet assistant)
+
+_In LaunchDarkly, make sure you're in the **Production** environment._
+
 
 Click **Ask the bet assistant** (bottom left). The server gets the `bet-assistant` AgentControl config for the current persona: the model (Claude Haiku 4.5), parameters, and system prompt, which includes the bettor's state from their context (`{{ ldctx.state }}`). It then calls Claude and records duration, tokens, success, and thumbs up/down feedback against the variation that answered.
 
@@ -388,6 +406,7 @@ In your real rollout, you'd have Dev, Staging, and Production. Flags are defined
 
 Run `make doctor` first; it pinpoints most problems.
 
+- **Flag changes don't show up in the app:** check the LaunchDarkly UI is on the **Production** environment. The app only listens to Production.
 - **Flags always false:** the key is from the wrong environment or project, or the flag isn't available to client-side SDKs. `make doctor` checks both.
 - **"LaunchDarkly client-side ID is missing":** set `LD_CLIENT_SIDE_ID` in `.env` and restart.
 - **Bet assistant unavailable:** check `ANTHROPIC_API_KEY` and that the `bet-assistant` config's targeting is on.
