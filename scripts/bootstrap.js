@@ -1,11 +1,12 @@
 // Creates everything the demo needs in LaunchDarkly, for a reviewer starting
 // from an empty account: project, flags, metric, AgentControl config, trigger,
-// then the demo's starting targeting (same code as make demo-reset). It also
+// then the demo's starting targeting (same code as make demo-reset) and the
+// new-bet-slip experiment design (not started). It also
 // fills in LD_SDK_KEY, LD_CLIENT_SIDE_ID, and LD_TRIGGER_URL in .env.
 // Only needs LD_API_TOKEN. Skips anything that already exists, so it's safe to rerun.
 // Run with `make bootstrap`.
 import fs from "node:fs";
-import { api, ENVIRONMENT, PROJECT, RESOURCES } from "./lib/ld.js";
+import { api, ENVIRONMENT, PROJECT, RESOURCES, variationId } from "./lib/ld.js";
 import { resetDemo } from "./demo-reset.js";
 
 const COMMENT = "make bootstrap: create demo resources";
@@ -172,14 +173,49 @@ async function ensureTrigger() {
   }
 }
 
+// The experiment on new-bet-slip's state rule, created but not started, so
+// starting it stays a demo moment. Runs after targeting so the rule exists.
+async function ensureExperiment() {
+  console.log("\nExperiment");
+  const path = `/projects/${PROJECT}/environments/${ENVIRONMENT}/experiments`;
+  const existing = await api(`${path}/${RESOURCES.experiment}`);
+  if (existing.ok) return console.log(`  - experiment "${RESOURCES.experiment}" already exists`);
+
+  const flagRes = await api(`/flags/${PROJECT}/new-bet-slip?env=${ENVIRONMENT}`);
+  const env = flagRes.body?.environments?.[ENVIRONMENT];
+  const rule = env?.rules?.find((r) => r.description === RESOURCES.legalStatesRule);
+  if (!rule) {
+    errors += 1;
+    return console.log(`  ✗ Could not find the "${RESOURCES.legalStatesRule}" rule on new-bet-slip`);
+  }
+  const flag = flagRes.body;
+  const hypothesis = "Quick stakes and a payout preview will increase the share of bettors who place a bet.";
+  await create(`experiment "${RESOURCES.experiment}" (not started)`, path, {
+    key: RESOURCES.experiment,
+    name: "New bet slip vs classic",
+    description: hypothesis,
+    iteration: {
+      hypothesis,
+      randomizationUnit: "user",
+      primarySingleMetricKey: RESOURCES.metric,
+      metrics: [{ key: RESOURCES.metric }],
+      treatments: [
+        { name: "Classic slip", baseline: true, allocationPercent: "50", parameters: [{ flagKey: "new-bet-slip", variationId: variationId(flag, false) }] },
+        { name: "New slip", baseline: false, allocationPercent: "50", parameters: [{ flagKey: "new-bet-slip", variationId: variationId(flag, true) }] },
+      ],
+      flags: { "new-bet-slip": { ruleId: rule._id, flagConfigVersion: env.version ?? flag._version } },
+    },
+  });
+}
+
 function nextSteps() {
   console.log(`
 Next steps:
   1. Optional: ANTHROPIC_API_KEY in .env for the bet assistant.
   2. If the "bet-assistant" config's targeting is off, turn it on in the UI.
-  3. Optional: create the "New bet slip vs classic" experiment on the
-     "Legal live-betting states" rule of new-bet-slip (see README).
-  4. Run make doctor, then make up.`);
+  3. Run make doctor, then make up.
+  4. For the experiment: start "New bet slip vs classic" in LaunchDarkly,
+     then run make simulate-bets (see README).`);
 }
 
 async function main() {
@@ -197,6 +233,7 @@ async function main() {
 
   console.log("\nStarting targeting");
   errors += await resetDemo();
+  await ensureExperiment();
 
   nextSteps();
   if (errors) {

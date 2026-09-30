@@ -8,7 +8,7 @@ Stack: React (LaunchDarkly React SDK) + Node/Express (LaunchDarkly Node server S
 ## What's in the demo
 
 | Prompt requirement | LaunchDarkly feature | Where it lives | How to see it |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | **Part 1:** flag a new feature, release and roll back | Flag `live-betting` | `client/src/App.jsx` (`useBoolVariation`), `server/src/index.js` (`/api/live/odds`) | Toggle `live-betting` and watch the LIVE panel appear and disappear |
 | **Part 1:** test in production before release | Individual target (`qa-tester`) | LaunchDarkly targeting | Only the QA persona sees live betting while customers don't |
 | **Part 1:** instant switch with no page reload | Streaming + explicit listener | `client/src/App.jsx` (`ldClient.on("change:live-betting")`) | A toast appears the moment the flag changes |
@@ -80,8 +80,8 @@ make up
 
 `make doctor` checks your keys, token, and every LaunchDarkly resource, and tells you what to fix. Then open:
 
-- **Sportsbook:** http://localhost:3000
-- **Presenter panel:** http://localhost:3000/presenter (one-click personas and live flag values with evaluation reasons)
+- **Sportsbook:** <http://localhost:3000>
+- **Presenter panel:** <http://localhost:3000/presenter> (one-click personas and live flag values with evaluation reasons)
 
 `make down` stops it and `make logs` follows the logs.
 
@@ -120,7 +120,7 @@ Open the sportsbook and the presenter panel side by side. Run `make demo-reset` 
 Switch personas with the dropdown in the header or the presenter panel. Each switch calls `identify()`, so flags re-evaluate with no reload.
 
 | Persona | Context | Bet slip | Why |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Peter | NV, vip, internal QA | New | Individual target (`qa-tester`) |
 | Cody | NJ, standard | New | Rule "Legal live-betting states" (`state` is one of NJ, NV) |
 | Maya | NV, vip | New | Same rule |
@@ -132,7 +132,7 @@ The presenter panel shows the evaluation reason for each value (Individual targe
 
 The experiment "New bet slip vs classic" runs on the **Legal live-betting states** rule of `new-bet-slip`, with the `bet-placed` metric. Both slips send `track("bet-placed")` from the same function, so only the design differs.
 
-1. Create the experiment in LaunchDarkly (**Create > Experiment**): flag `new-bet-slip`, rule "Legal live-betting states", metric `bet-placed`, randomize by `user`, 50/50 with Classic slip as control. Start an iteration.
+1. **Start it.** `make bootstrap` already created the experiment (flag `new-bet-slip`, rule "Legal live-betting states", metric `bet-placed`, randomized by `user`, 50/50 with Classic slip as control) but didn't start it. In LaunchDarkly, open **Experiments > New bet slip vs classic** and start an iteration. While it runs, NJ and NV bettors are split 50/50 instead of all getting the new slip.
 2. Generate traffic:
 
    ```bash
@@ -140,7 +140,8 @@ The experiment "New bet slip vs classic" runs on the **Legal live-betting states
    ```
 
    500 simulated bettors see a slip (the exposure) and some place a bet (the conversion).
-3. Read the results in the experiment's **Results** tab.
+3. Read the results in the experiment's **Results** tab (they appear a few minutes after the traffic, once LaunchDarkly processes the events).
+4. **Decide.** Stop the iteration and ship the winning variation. That also puts the rule back to serving the new slip to NJ and NV.
 
 > **The experiment data is simulated.** The simulator converts bettors at 25% on the classic slip and 40% on the new slip, so the experiment has a clear result to find. It demonstrates the setup (exposures and conversions joined by stable context keys, analyzed by LaunchDarkly), not real customer behavior. In my run: classic 25.8% vs new 43.5%, a 68% relative lift, statistically significant.
 
@@ -162,10 +163,11 @@ Click **Ask the bet assistant** (bottom left). The server gets the `bet-assistan
 `make bootstrap` creates all of these. To create them by hand, match the keys exactly: the code references them by key, and a missing or misspelled one falls back to its default value silently.
 
 | Key | Type | Settings |
-|---|---|---|
+| --- | --- | --- |
 | `live-betting` | Boolean flag | Variations "Available" (true) / "Unavailable" (false). Available to client-side SDKs. Default on and off: false. Individual target `qa-tester` gets true. Turn-off trigger (generic). Starting state: targeting off. |
 | `new-bet-slip` | Boolean flag | Variations "New slip" (true) / "Classic slip" (false). Available to client-side SDKs. Individual target `qa-tester` gets true. Rule "Legal live-betting states": `state` is one of `NJ`, `NV` serves true. Default rule: false. Targeting on. |
 | `bet-placed` | Metric | Custom conversion (Occurrence), event key `bet-placed`, higher is better, randomized by `user`. |
+| `new-bet-slip-vs-classic` | Experiment | On `new-bet-slip`'s rule "Legal live-betting states", metric `bet-placed`, randomized by `user`, 50/50, Classic slip as control. Created but not started. |
 | `bet-assistant` | AgentControl config | Completion mode. Variations "Concise explainer" and "Friendly coach", model Claude Haiku 4.5, `max_tokens` 300, system prompts in `scripts/bootstrap.js`. Default rule 50/50. |
 | Trigger on `live-betting` | Flag trigger | Generic trigger, action "Turn off flag". Its URL goes in `LD_TRIGGER_URL`. |
 
@@ -174,7 +176,7 @@ Flag keys in code carry a `// FLAG:` comment, and the SDK key location carries a
 ## Make commands
 
 | Command | What it does |
-|---|---|
+| --- | --- |
 | `make up` / `make down` / `make logs` | Build and run the app in Docker, stop it, follow logs |
 | `make dev` | Hot-reload dev loop (needs Node 24): Vite on :5173, API on :3000 |
 | `make setup` | First-time setup: paste your keys (hidden) into `.env`, then run bootstrap |

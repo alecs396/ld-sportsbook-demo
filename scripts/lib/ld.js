@@ -10,6 +10,8 @@ const API = "https://app.launchdarkly.com/api/v2";
 export const RESOURCES = {
   flags: ["live-betting", "new-bet-slip"],
   metric: "bet-placed",
+  experiment: "new-bet-slip-vs-classic",
+  legalStatesRule: "Legal live-betting states",
   aiConfig: "bet-assistant",
   triggerFlag: "live-betting",
   qaTester: "qa-tester",

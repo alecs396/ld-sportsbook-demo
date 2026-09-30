@@ -88,6 +88,15 @@ async function checkResources() {
     ? pass(`AgentControl config "${RESOURCES.aiConfig}" exists`)
     : warn(`AgentControl config "${RESOURCES.aiConfig}" not found: the bet assistant will be unavailable`);
 
+  const experiment = await api(`/projects/${PROJECT}/environments/${ENVIRONMENT}/experiments/${RESOURCES.experiment}`);
+  if (!experiment.ok) {
+    warn(`Experiment "${RESOURCES.experiment}" not found (run make bootstrap to create it)`);
+  } else if (experiment.body?.currentIteration?.status === "running") {
+    warn(`Experiment "${RESOURCES.experiment}" is running: NJ and NV are split 50/50 until you stop it, which changes the Part 2 demo`);
+  } else {
+    pass(`Experiment "${RESOURCES.experiment}" exists and isn't running`);
+  }
+
   const triggers = await api(`/flags/${PROJECT}/${RESOURCES.triggerFlag}/triggers/${ENVIRONMENT}`);
   const offTrigger = triggers.body?.items?.find(
     (t) => t.enabled && t.instructions?.some((i) => i.kind === "turnFlagOff"),
