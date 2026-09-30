@@ -1,6 +1,6 @@
 // Restores the demo's starting state in LaunchDarkly (and turns off the app's
 // outage mode). Only patches what differs, so running it twice is a no-op.
-// Run with `make demo-reset`. See docs/demo-runbook.md for the starting state.
+// Run with `make demo-reset`.
 import { pathToFileURL } from "node:url";
 import { api, ENVIRONMENT, PROJECT, RESOURCES, variationId, variationValue } from "./lib/ld.js";
 
