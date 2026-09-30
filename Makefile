@@ -1,11 +1,12 @@
 # Kickoff Sportsbook, a LaunchDarkly demo. Run `make` to list commands.
 .DEFAULT_GOAL := help
 
-# Scripts and simulators run with local Node when it's installed. Without Node
-# (or with DOCKER=1) they run inside the app image, so Docker is all you need.
-# In Docker the app is reachable at http://app:3000 on the compose network, and
-# overrides like SIM_BETTORS=10 are passed through from your shell.
-ifeq ($(or $(DOCKER),$(if $(shell command -v node 2>/dev/null),,missing)),)
+# Scripts and simulators run with local Node when Node is installed AND the
+# dependencies are (node_modules exists, from make install or make dev).
+# Otherwise (or with DOCKER=1) they run inside the app image, so Docker is all
+# you need. In Docker the app is reachable at http://app:3000 on the compose
+# network, and overrides like SIM_BETTORS=10 are passed through from your shell.
+ifeq ($(or $(DOCKER),$(if $(shell command -v node 2>/dev/null),,missing),$(if $(wildcard node_modules),,missing)),)
 RUN_NODE = node --env-file-if-exists=.env
 else
 RUN_NODE = docker compose run --rm --no-deps -v "$(CURDIR)/.env:/app/.env" -e SIM_BASE_URL=http://app:3000 \
