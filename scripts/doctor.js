@@ -88,6 +88,15 @@ async function checkResources() {
     ? pass(`AgentControl config "${RESOURCES.aiConfig}" exists`)
     : warn(`AgentControl config "${RESOURCES.aiConfig}" not found: the bet assistant will be unavailable`);
 
+  const experiment = await api(`/projects/${PROJECT}/environments/${ENVIRONMENT}/experiments/${RESOURCES.experiment}`);
+  if (!experiment.ok) {
+    warn(`Experiment "${RESOURCES.experiment}" not found (run make bootstrap to create it)`);
+  } else if (experiment.body?.currentIteration?.status === "running") {
+    warn(`Experiment "${RESOURCES.experiment}" is running: NJ and NV are split 50/50 until you stop it, which changes the Part 2 demo`);
+  } else {
+    pass(`Experiment "${RESOURCES.experiment}" exists and isn't running`);
+  }
+
   const triggers = await api(`/flags/${PROJECT}/${RESOURCES.triggerFlag}/triggers/${ENVIRONMENT}`);
   const offTrigger = triggers.body?.items?.find(
     (t) => t.enabled && t.instructions?.some((i) => i.kind === "turnFlagOff"),
@@ -132,14 +141,17 @@ function checkDemoState(flags) {
 async function checkApp() {
   section("App");
   const url = process.env.SIM_BASE_URL || "http://localhost:3000";
+  // In Docker mode the check reaches the app at http://app:3000 on the compose
+  // network, but your browser always uses localhost.
+  const browserUrl = "http://localhost:3000";
   try {
     const res = await fetch(`${url}/healthz`);
     const health = await res.json();
     health.launchdarkly?.initialized
-      ? pass(`App is running at ${url} and its SDK is initialized`)
-      : warn(`App is running at ${url} but its SDK is not initialized`);
+      ? pass(`App is running and its SDK is initialized. Open ${browserUrl} (presenter: ${browserUrl}/presenter)`)
+      : warn(`App is running at ${browserUrl} but its SDK is not initialized`);
   } catch {
-    warn(`App is not running at ${url} (start it with make up or make dev)`);
+    warn(`App is not running (start it with make up, then open ${browserUrl})`);
   }
 }
 
