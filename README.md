@@ -1,7 +1,6 @@
 # Kickoff Sportsbook: a LaunchDarkly demo
 
-<!-- Alec: in your words. 2 to 3 sentences on the story and why it matters to a VP of Engineering. -->
-A fictional sportsbook is launching **live betting** right before the Super Bowl, and it can't afford a game-day outage. This sample app shows how LaunchDarkly lets the team ship the feature dark, test it in production with QA, release it by state, roll it back instantly (automatically when errors spike), and prove what works with experiments.
+You're launching live betting right before the Super Bowl, and your biggest risk isn't the code, it's the release. This sample app shows how LaunchDarkly separates the two: deploy whenever you're ready, then test in production with QA, release state by state, roll back in seconds (automatically when errors spike), and let experiments show what works.
 
 Stack: React (LaunchDarkly React SDK) + Node/Express (LaunchDarkly Node server SDK and AI SDK), packaged as one Docker container.
 
@@ -27,7 +26,7 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 **Server SDK** (Node, [server/src/index.js](server/src/index.js))
 
 | What | Where |
-|---|---|
+| --- | --- |
 | SDK key from `.env` | [index.js#L21](server/src/index.js#L21) |
 | Create the client (one per process, offline mode without a key) | [index.js#L31](server/src/index.js#L31) |
 | Wait for initialization before serving | [index.js#L158](server/src/index.js#L158) |
@@ -40,7 +39,7 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 **Browser SDK** (React)
 
 | What | Where |
-|---|---|
+| --- | --- |
 | Start the SDK with the client-side ID and initial context | [client/src/main.jsx#L67](client/src/main.jsx#L67) |
 | Evaluate `live-betting` and `new-bet-slip` with hooks | [client/src/App.jsx#L20](client/src/App.jsx#L20) |
 | Wait for initialization (no flicker) | [client/src/App.jsx#L28](client/src/App.jsx#L28) |
@@ -54,7 +53,7 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 **AI Config** (AgentControl, [server/src/chat.js](server/src/chat.js))
 
 | What | Where |
-|---|---|
+| --- | --- |
 | Config key | [chat.js#L5](server/src/chat.js#L5) |
 | AI client on top of the server SDK client | [chat.js#L47](server/src/chat.js#L47) |
 | Get the config for the bettor, with a fallback | [chat.js#L61](server/src/chat.js#L61) |
@@ -64,7 +63,7 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 **Triggers, REST API, and CI**
 
 | What | Where |
-|---|---|
+| --- | --- |
 | `make fire-trigger` | [Makefile](Makefile) (target `fire-trigger`) |
 | Automatic remediation: fire the trigger when errors spike | [simulator/index.js#L31](simulator/index.js#L31) |
 | REST API helper (semantic patch) | [scripts/lib/ld.js](scripts/lib/ld.js) |
@@ -143,7 +142,7 @@ This builds and starts the app in Docker. When it prints `App: http://localhost:
 ### 7. Open it in your browser
 
 | Page | Link | What it's for |
-|---|---|---|
+| --- | --- | --- |
 | **Sportsbook** | <http://localhost:3000> | The customer site, signed in as Cody (NJ) |
 | **Presenter panel** | <http://localhost:3000/presenter> | One-click personas and live flag values with the reason for each |
 | **Sportsbook as QA** | <http://localhost:3000/?as=qa-tester> | The QA tester's view (Peter), for testing in production |
@@ -377,9 +376,7 @@ flowchart LR
 
 ## Environments
 
-The demo runs entirely in the project's **Production** environment. Flags are defined once per project, while targeting, individual targets, and SDK keys are per environment, so a real rollout would use Dev, Staging, and Production and promote tested configuration between them. Here, one environment keeps the demo focused: the Part 1 story is "test in production" with a QA target, and the experiment's data stays in one place. The scripts read `LD_ENVIRONMENT` (default `production`), so they work against any environment.
-
-<!-- Alec: in your words. Why you made this choice. -->
+In your real rollout, you'd have Dev, Staging, and Production. Flags are defined once per project, while targeting and SDK keys belong to each environment, so a staging key can never change production and you promote tested configuration from one environment to the next. This sample runs everything in **Production** on purpose: the point of LaunchDarkly is that you can test safely *in production*, with your QA team individually targeted, instead of trusting a staging copy that never quite matches game-day traffic. One environment also keeps the experiment's data in one place. The scripts read `LD_ENVIRONMENT` (default `production`), so everything works against any environment you choose.
 
 ## Security notes
 
@@ -395,7 +392,3 @@ Run `make doctor` first; it pinpoints most problems.
 - **"LaunchDarkly client-side ID is missing":** set `LD_CLIENT_SIDE_ID` in `.env` and restart.
 - **Bet assistant unavailable:** check `ANTHROPIC_API_KEY` and that the `bet-assistant` config's targeting is on.
 - **Port already in use:** stop `make dev` or other apps on 3000/5173, or run `make down`.
-
-## What I learned
-
-<!-- Alec: in your words. 3 to 5 takeaways, e.g. from your learning log. -->
