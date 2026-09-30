@@ -1,6 +1,8 @@
 # Kickoff Sportsbook: a LaunchDarkly demo
 
-You're launching live betting right before the Super Bowl, and your biggest risk isn't the code, it's the release. This sample app shows how LaunchDarkly separates the two: deploy whenever you're ready, then test in production with QA, release state by state, roll back in seconds (automatically when errors spike), and let experiments show what works.
+Kickoff Sportsbook is launching live betting right before the Super Bowl, and its biggest risk isn't the code, it's the release. This sample app shows how LaunchDarkly separates the two: deploy whenever you're ready, then test in production with QA, release state by state, roll back in seconds (automatically when errors spike), and let experiments show what works.
+
+**For reviewers:** setup takes about 10 minutes with Docker and a LaunchDarkly trial (see [Setup](#setup)). [Running the demo](#running-the-demo) then walks through each part of the exercise, and [Where the LaunchDarkly code is](#where-the-launchdarkly-code-is) links straight to every SDK call.
 
 Stack: React (LaunchDarkly React SDK) + Node/Express (LaunchDarkly Node server SDK and AI SDK), packaged as one Docker container.
 
@@ -394,7 +396,7 @@ flowchart LR
 
 ## Environments
 
-In your real rollout, you'd have Dev, Staging, and Production. Flags are defined once per project, while targeting and SDK keys belong to each environment, so a staging key can never change production and you promote tested configuration from one environment to the next. This sample runs everything in **Production** on purpose: the point of LaunchDarkly is that you can test safely *in production*, with your QA team individually targeted, instead of trusting a staging copy that never quite matches game-day traffic. One environment also keeps the experiment's data in one place. The scripts read `LD_ENVIRONMENT` (default `production`), so everything works against any environment you choose.
+In a real rollout, the team would have Dev, Staging, and Production. Flags are defined once per project, while targeting and SDK keys belong to each environment, so a staging key can never change production and you promote tested configuration from one environment to the next. This sample runs everything in **Production** on purpose: the point of LaunchDarkly is that you can test safely *in production*, with the QA team individually targeted, instead of trusting a staging copy that never quite matches game-day traffic. One environment also keeps the experiment's data in one place. The scripts read `LD_ENVIRONMENT` (default `production`), so everything works against any environment you choose.
 
 ## Security notes
 
