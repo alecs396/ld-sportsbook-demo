@@ -71,23 +71,51 @@ It never overwrites a value you've already set, and both `make setup` and `make 
 
 If you skipped it during setup, run `make setup` again (press Enter to keep your token) or add `ANTHROPIC_API_KEY` to `.env`. Without it, the chatbot says it isn't set up and everything else works.
 
-### 5. Check everything and start the app
+### 5. Check your setup
 
 ```bash
 make doctor
+```
+
+This checks your keys, token, and every LaunchDarkly resource, and tells you what to fix. The first time you run it without Node installed, Docker builds the app image first, which takes about a minute. One warning is expected at this point: "App is not running", because you start it in the next step.
+
+### 6. Start the app
+
+```bash
 make up
 ```
 
-`make doctor` checks your keys, token, and every LaunchDarkly resource, and tells you what to fix. Then open:
+This builds and starts the app in Docker. When it prints `App: http://localhost:3000`, it's ready.
 
-- **Sportsbook:** <http://localhost:3000>
-- **Presenter panel:** <http://localhost:3000/presenter> (one-click personas and live flag values with evaluation reasons)
+### 7. Open it in your browser
 
-`make down` stops it and `make logs` follows the logs.
+| Page | Link | What it's for |
+|---|---|---|
+| **Sportsbook** | <http://localhost:3000> | The customer site, signed in as Cody (NJ) |
+| **Presenter panel** | <http://localhost:3000/presenter> | One-click personas and live flag values with the reason for each |
+| **Sportsbook as QA** | <http://localhost:3000/?as=qa-tester> | The QA tester's view (Peter), for testing in production |
+
+Always use `localhost` in your browser. (If `make doctor` mentions `http://app:3000`, that's the address containers use to reach each other inside Docker; it doesn't work in a browser.)
+
+You can also open the sportsbook as any persona with `?as=`: `new-jersey-user`, `nevada-vip`, `california-user`, or `qa-tester`. The persona you pick last is remembered in that browser.
+
+To stop the app, run `make down`. To follow its logs, run `make logs`.
 
 ## Running the demo
 
-Open the sportsbook and the presenter panel side by side. Run `make demo-reset` before each run-through to restore the starting state.
+Before each run-through, restore the starting state:
+
+```bash
+make demo-reset
+```
+
+Then open three windows side by side:
+
+1. **Customer:** <http://localhost:3000/?as=new-jersey-user>
+2. **QA tester:** <http://localhost:3000/?as=qa-tester>
+3. **Presenter panel:** <http://localhost:3000/presenter> (clicking a persona here also switches the customer window)
+
+Keep LaunchDarkly open in a fourth window with the **Production** environment selected.
 
 ### Part 1: release and remediate (`live-betting`)
 

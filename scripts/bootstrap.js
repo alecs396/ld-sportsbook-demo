@@ -154,8 +154,28 @@ async function ensureTrigger() {
   console.log("\nTrigger");
   const path = `/flags/${PROJECT}/${RESOURCES.triggerFlag}/triggers/${ENVIRONMENT}`;
   const existing = await api(path);
-  const hasOffTrigger = existing.body?.items?.some((t) => t.instructions?.some((i) => i.kind === "turnFlagOff"));
-  if (hasOffTrigger) return console.log(`  - A turn-off trigger on "${RESOURCES.triggerFlag}" already exists`);
+  const offTrigger = existing.body?.items?.find((t) => t.instructions?.some((i) => i.kind === "turnFlagOff"));
+  if (offTrigger) {
+    console.log(`  - A turn-off trigger on "${RESOURCES.triggerFlag}" already exists`);
+    // LaunchDarkly only shows a trigger's URL once. If .env doesn't have it
+    // (a new clone, or a lost .env), reset the URL to get a new one.
+    const current = fs.existsSync(ENV_FILE) ? /^LD_TRIGGER_URL=(.*)$/m.exec(fs.readFileSync(ENV_FILE, "utf8"))?.[1]?.trim() : "";
+    if (current && current !== PLACEHOLDERS.LD_TRIGGER_URL) return;
+    const cycled = await api(`${path}/${offTrigger._id}`, {
+      method: "PATCH",
+      semanticPatch: true,
+      body: { comment: "make bootstrap: new URL for a fresh .env", instructions: [{ kind: "cycleTriggerUrl" }] },
+    });
+    if (cycled.ok && cycled.body?.triggerURL) {
+      saveEnvValue("LD_TRIGGER_URL", cycled.body.triggerURL);
+      console.log("  ✓ Reset the trigger URL and saved it to LD_TRIGGER_URL in .env (not printed)");
+      console.log("  ! The old URL no longer works: update any other copy of .env or monitoring tool that used it.");
+    } else {
+      errors += 1;
+      console.log(`  ✗ Could not reset the trigger URL (HTTP ${cycled.status})`);
+    }
+    return;
+  }
 
   const res = await create(`turn-off trigger on "${RESOURCES.triggerFlag}"`, path, {
     integrationKey: "generic-trigger",

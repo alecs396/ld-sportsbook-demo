@@ -46,7 +46,7 @@ logs: ## Follow the app container logs
 fire-trigger: check-env ## Turn off live-betting with its LaunchDarkly trigger (remediation)
 	@url=$$(grep '^LD_TRIGGER_URL=' .env | cut -d= -f2-); \
 	if [ -z "$$url" ] || [ "$$url" = "paste-your-trigger-url-here" ]; then \
-		echo "LD_TRIGGER_URL is not set in .env (see .env.example)"; exit 1; \
+		echo "LD_TRIGGER_URL is not set in .env. Run make bootstrap to create the trigger or get a new URL."; exit 1; \
 	fi; \
 	code=$$(curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
 		-d '{"eventName":"Manual remediation via make fire-trigger"}' "$$url"); \
