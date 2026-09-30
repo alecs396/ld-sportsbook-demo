@@ -1,6 +1,7 @@
 // Creates everything the demo needs in LaunchDarkly, for a reviewer starting
 // from an empty account: project, flags, metric, AgentControl config, trigger,
-// then the demo's starting targeting (same code as make demo-reset).
+// then the demo's starting targeting (same code as make demo-reset). It also
+// fills in LD_SDK_KEY, LD_CLIENT_SIDE_ID, and LD_TRIGGER_URL in .env.
 // Only needs LD_API_TOKEN. Skips anything that already exists, so it's safe to rerun.
 // Run with `make bootstrap`.
 import fs from "node:fs";
@@ -104,21 +105,48 @@ async function ensureAiConfig() {
       "You are Kickoff Sportsbook's friendly betting coach. Explain odds, bet types, and payouts warmly, as if talking to someone new to sports betting. Keep it under 120 words and end with one practical tip. The bettor is in {{ ldctx.state }}. Never give picks or guarantee outcomes, and remind people to bet responsibly."));
 }
 
-// The trigger URL is shown only once, at creation. Save it to .env instead of
-// printing it, and never overwrite an existing LD_TRIGGER_URL.
-function saveTriggerUrl(url) {
+// Placeholder values from .env.example count as "not set".
+const PLACEHOLDERS = {
+  LD_SDK_KEY: "sdk-your-sdk-key-here",
+  LD_CLIENT_SIDE_ID: "your-client-side-id-here",
+  LD_TRIGGER_URL: "paste-your-trigger-url-here",
+};
+
+// Writes NAME=value into .env if NAME is missing or still a placeholder.
+// Never overwrites a real value and never prints one (these are secrets).
+// Returns "saved", "same", or "kept" (a different value was already set).
+function saveEnvValue(name, value) {
   const current = fs.existsSync(ENV_FILE) ? fs.readFileSync(ENV_FILE, "utf8") : "";
-  const existing = /^LD_TRIGGER_URL=(.+)$/m.exec(current)?.[1]?.trim();
-  if (existing && existing !== "paste-your-trigger-url-here") {
-    console.log("  ! LD_TRIGGER_URL is already set in .env, so the new URL was not saved.");
-    console.log("    To use this trigger, reset its URL in the LaunchDarkly UI and paste it into .env.");
-    return;
-  }
-  const updated = /^LD_TRIGGER_URL=.*$/m.test(current)
-    ? current.replace(/^LD_TRIGGER_URL=.*$/m, `LD_TRIGGER_URL=${url}`)
-    : `${current.trimEnd()}\nLD_TRIGGER_URL=${url}\n`;
+  const pattern = new RegExp(`^${name}=(.*)$`, "m");
+  const existing = pattern.exec(current)?.[1]?.trim();
+  if (existing && existing !== PLACEHOLDERS[name]) return existing === value ? "same" : "kept";
+
+  const updated = pattern.test(current)
+    ? current.replace(pattern, `${name}=${value}`)
+    : `${current.trimEnd()}\n${name}=${value}\n`;
   fs.writeFileSync(ENV_FILE, updated);
-  console.log("  ✓ Saved the trigger URL to LD_TRIGGER_URL in .env (not printed: it's a secret)");
+  return "saved";
+}
+
+// The SDK key and client-side ID come from the environment, so the reviewer
+// only has to paste LD_API_TOKEN.
+async function ensureSdkKeys() {
+  console.log("\nSDK keys");
+  const env = await api(`/projects/${PROJECT}/environments/${ENVIRONMENT}`);
+  if (!env.ok) {
+    errors += 1;
+    return console.log(`  ✗ Could not read environment "${ENVIRONMENT}" (HTTP ${env.status})`);
+  }
+  const keys = [
+    ["LD_SDK_KEY", env.body.apiKey, "SDK key"],
+    ["LD_CLIENT_SIDE_ID", env.body._id, "client-side ID"],
+  ];
+  for (const [name, value, label] of keys) {
+    const result = saveEnvValue(name, value);
+    if (result === "saved") console.log(`  ✓ Saved the ${label} to ${name} in .env (not printed)`);
+    if (result === "same") console.log(`  - ${name} in .env already matches "${ENVIRONMENT}"`);
+    if (result === "kept") console.log(`  ! ${name} in .env is set to a different value and was left alone (run make doctor)`);
+  }
 }
 
 async function ensureTrigger() {
@@ -133,19 +161,25 @@ async function ensureTrigger() {
     comment: COMMENT,
     instructions: [{ kind: "turnFlagOff" }],
   });
-  if (res.ok && res.body?.triggerURL) saveTriggerUrl(res.body.triggerURL);
+  // The trigger URL is only returned at creation, so save it now.
+  if (res.ok && res.body?.triggerURL) {
+    if (saveEnvValue("LD_TRIGGER_URL", res.body.triggerURL) === "saved") {
+      console.log("  ✓ Saved the trigger URL to LD_TRIGGER_URL in .env (not printed: it's a secret)");
+    } else {
+      console.log("  ! LD_TRIGGER_URL was already set in .env, so the new URL was not saved.");
+      console.log("    To use this trigger, reset its URL in the LaunchDarkly UI and paste it into .env.");
+    }
+  }
 }
 
 function nextSteps() {
   console.log(`
-Next steps (manual):
-  1. Copy the SDK key and client-side ID for "${ENVIRONMENT}" into .env:
-     LaunchDarkly > gear icon > Organization settings > SDK keys > "${PROJECT}" / "${ENVIRONMENT}".
-  2. Optional: ANTHROPIC_API_KEY in .env for the bet assistant.
-  3. If the "bet-assistant" config's targeting is off, turn it on in the UI.
-  4. Optional: create the "New bet slip vs classic" experiment on the
+Next steps:
+  1. Optional: ANTHROPIC_API_KEY in .env for the bet assistant.
+  2. If the "bet-assistant" config's targeting is off, turn it on in the UI.
+  3. Optional: create the "New bet slip vs classic" experiment on the
      "Legal live-betting states" rule of new-bet-slip (see README).
-  5. Run make doctor.`);
+  4. Run make doctor, then make up.`);
 }
 
 async function main() {
@@ -155,6 +189,7 @@ async function main() {
   }
   console.log(`Bootstrapping "${PROJECT}" / "${ENVIRONMENT}"`);
   await ensureProject();
+  await ensureSdkKeys();
   await ensureFlags();
   await ensureMetric();
   await ensureAiConfig();

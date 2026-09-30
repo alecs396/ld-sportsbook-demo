@@ -46,24 +46,27 @@ cp .env.example .env
 
 In LaunchDarkly: **gear icon > Authorization > Create token**, role **Writer**. Copy it (it's shown once) into `.env` as `LD_API_TOKEN`.
 
-### 3. Create the LaunchDarkly resources
+### 3. Create the LaunchDarkly resources and fill in your keys
 
 ```bash
 make bootstrap
 ```
 
-This uses only the API token to create the project `ld-sportsbook-demo` (set `LD_PROJECT_KEY` in `.env` to use another key), both flags, the metric, the AgentControl config, and the trigger, then sets the demo's starting targeting. The trigger's secret URL is saved to `LD_TRIGGER_URL` in `.env` without being printed. It's safe to run again: anything that exists is skipped.
+Using only the API token, this creates the project `ld-sportsbook-demo` (set `LD_PROJECT_KEY` in `.env` to use another key), both flags, the metric, the AgentControl config, and the trigger, then sets the demo's starting targeting. It also fills in `.env` for you, without printing any of the values:
+
+- `LD_SDK_KEY`: the **SDK key** for Production (secret, server only)
+- `LD_CLIENT_SIDE_ID`: the **client-side ID** for Production (public, used by the browser)
+- `LD_TRIGGER_URL`: the trigger's secret URL, which LaunchDarkly only shows once
+
+It never overwrites a value you've already set, and it's safe to run again: anything that exists is skipped. The keys also live in LaunchDarkly under **gear icon > Organization settings > SDK keys** if you'd rather copy them yourself.
+
+Each reviewer uses their own LaunchDarkly account: the demo is about changing flags and targeting, and the SDK key is a secret that can't be shared.
 
 Prefer to click through it yourself, or want to see exactly what it creates? See [LaunchDarkly resources](#launchdarkly-resources).
 
-### 4. Add the SDK key and client-side ID
+### 4. Optional: the bet assistant
 
-In LaunchDarkly: **gear icon > Organization settings > SDK keys**, choose your project and **Production**, and copy:
-
-- the **SDK key** (starts with `sdk-`, secret, server only) into `LD_SDK_KEY`
-- the **client-side ID** (public, used by the browser) into `LD_CLIENT_SIDE_ID`
-
-Optional: add `ANTHROPIC_API_KEY` for the bet assistant.
+Add an Anthropic API key to `.env` as `ANTHROPIC_API_KEY`. Without it, the chatbot says it isn't set up and everything else works.
 
 ### 5. Check everything and start the app
 
