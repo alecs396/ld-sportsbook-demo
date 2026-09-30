@@ -20,6 +20,59 @@ Stack: React (LaunchDarkly React SDK) + Node/Express (LaunchDarkly Node server S
 | **Extra credit:** AI Configs | AgentControl config `bet-assistant` | `server/src/chat.js`, `client/src/ChatWidget.jsx` | Ask the bet assistant; change the prompt in LaunchDarkly with no deploy |
 | **Extra credit:** integrations | GitHub code references, Slack | `.github/workflows/ld-code-refs.yml` | Flag pages show code references; Slack posts flag changes |
 
+## Where the LaunchDarkly code is
+
+All LaunchDarkly code is in the files below; links go to the exact lines. Search the repo for these comments to find the places you'd change for your own project: `// SDK KEY:` (where the SDK key comes from), `// FLAG:` (every flag key, which must exist in your project), and `// AI CONFIG:` (the AgentControl config key).
+
+**Server SDK** (Node, [server/src/index.js](server/src/index.js))
+
+| What | Where |
+|---|---|
+| SDK key from `.env` | [index.js#L21](server/src/index.js#L21) |
+| Create the client (one per process, offline mode without a key) | [index.js#L31](server/src/index.js#L31) |
+| Wait for initialization before serving | [index.js#L158](server/src/index.js#L158) |
+| Report SDK status in `/healthz` | [index.js#L43](server/src/index.js#L43) |
+| Evaluate `live-betting` per request, with the caller's context | [index.js#L89](server/src/index.js#L89) |
+| Evaluate `new-bet-slip` (experiment exposure for simulated bettors) | [index.js#L117](server/src/index.js#L117) |
+| `track("bet-placed")` with a context (experiment conversion) | [index.js#L131](server/src/index.js#L131) |
+| Flush events and close on shutdown | [index.js#L173](server/src/index.js#L173) |
+
+**Browser SDK** (React)
+
+| What | Where |
+|---|---|
+| Start the SDK with the client-side ID and initial context | [client/src/main.jsx#L67](client/src/main.jsx#L67) |
+| Evaluate `live-betting` and `new-bet-slip` with hooks | [client/src/App.jsx#L20](client/src/App.jsx#L20) |
+| Wait for initialization (no flicker) | [client/src/App.jsx#L28](client/src/App.jsx#L28) |
+| Explicit change listener for `live-betting` (Part 1) | [client/src/App.jsx#L57](client/src/App.jsx#L57) |
+| `identify()` when the persona changes (Part 2) | [client/src/App.jsx#L103](client/src/App.jsx#L103) |
+| `track("bet-placed")` when a bet is placed (experiment) | [client/src/App.jsx#L122](client/src/App.jsx#L122) |
+| Values with evaluation reasons (presenter panel) | [client/src/Presenter.jsx#L30](client/src/Presenter.jsx#L30) |
+
+**Contexts:** the demo personas and simulated bettors, with custom attributes and `name` marked private, are in [server/personas.js](server/personas.js).
+
+**AI Config** (AgentControl, [server/src/chat.js](server/src/chat.js))
+
+| What | Where |
+|---|---|
+| Config key | [chat.js#L5](server/src/chat.js#L5) |
+| AI client on top of the server SDK client | [chat.js#L47](server/src/chat.js#L47) |
+| Get the config for the bettor, with a fallback | [chat.js#L61](server/src/chat.js#L61) |
+| Tracker: duration, tokens, success and error | [chat.js#L75](server/src/chat.js#L75) |
+| Thumbs up/down feedback | [chat.js#L109](server/src/chat.js#L109) |
+
+**Triggers, REST API, and CI**
+
+| What | Where |
+|---|---|
+| `make fire-trigger` | [Makefile](Makefile) (target `fire-trigger`) |
+| Automatic remediation: fire the trigger when errors spike | [simulator/index.js#L31](simulator/index.js#L31) |
+| REST API helper (semantic patch) | [scripts/lib/ld.js](scripts/lib/ld.js) |
+| Create all resources | [scripts/bootstrap.js](scripts/bootstrap.js) |
+| Restore the demo state | [scripts/demo-reset.js](scripts/demo-reset.js) |
+| Pre-flight checks | [scripts/doctor.js](scripts/doctor.js) |
+| Code references workflow | [.github/workflows/ld-code-refs.yml](.github/workflows/ld-code-refs.yml) |
+
 ## Prerequisites and assumptions
 
 - **Docker** with Docker Compose v2 (Docker Desktop on macOS or Windows, or Docker Engine on Linux). This is the only runtime you need: the app, scripts, and simulators all run in containers.
@@ -100,6 +153,29 @@ Always use `localhost` in your browser. (If `make doctor` mentions `http://app:3
 You can also open the sportsbook as any persona with `?as=`: `new-jersey-user`, `nevada-vip`, `california-user`, or `qa-tester`. The persona you pick last is remembered in that browser.
 
 To stop the app, run `make down`. To follow its logs, run `make logs`.
+
+### 8. Optional: Slack notifications
+
+Post every flag change (including trigger-driven rollbacks) to a Slack channel. You need a Slack workspace where you can install apps; a free one works.
+
+1. Install the **LaunchDarkly** app from the Slack App Directory: <https://slack.com/apps/AKEEF9DTM-launchdarkly>
+2. Create a channel, for example `#sportsbook-releases`.
+3. In that channel, connect your LaunchDarkly account:
+
+   ```
+   /launchdarkly account
+   ```
+
+   Click **Connect with LaunchDarkly**, then **Authorize**. The first person to connect needs a LaunchDarkly role that can create webhooks (Writer or above).
+4. Subscribe the channel to the project's Production flag changes (use your project key if you changed it):
+
+   ```
+   /launchdarkly subscribe -p ld-sportsbook-demo -e production
+   ```
+
+5. Check it: `/launchdarkly list` shows the subscription. Turning any flag on or off now posts to the channel.
+
+The Slack app acts as the LaunchDarkly member who connected it and never has more permissions than that member's role.
 
 ## Running the demo
 
@@ -184,7 +260,7 @@ Click **Ask the bet assistant** (bottom left). The server gets the `bet-assistan
 ### Extra credit: integrations
 
 - **GitHub code references:** `.github/workflows/ld-code-refs.yml` scans every push and shows, on each flag's **Code references** tab, where the flag is used. To enable it in your fork, add a repository secret `LD_ACCESS_TOKEN` (an API token that can write code references) and, if your project key isn't `ld-sportsbook-demo`, a repository variable `LD_PROJECT_KEY`.
-- **Slack:** install the LaunchDarkly Slack app, run `/launchdarkly account` to connect, then `/launchdarkly subscribe -p ld-sportsbook-demo -e production` in a channel. Flag changes, including trigger-driven rollbacks, are posted there.
+- **Slack:** see [Setup step 8](#8-optional-slack-notifications). Flag changes, including trigger-driven rollbacks, are posted to your channel.
 
 ## LaunchDarkly resources
 
@@ -200,6 +276,65 @@ Click **Ask the bet assistant** (bottom left). The server gets the `bet-assistan
 | Trigger on `live-betting` | Flag trigger | Generic trigger, action "Turn off flag". Its URL goes in `LD_TRIGGER_URL`. |
 
 Flag keys in code carry a `// FLAG:` comment, and the SDK key location carries a `// SDK KEY:` comment.
+
+## Manual setup (if the scripts don't work)
+
+Everything `make setup`, `make bootstrap`, and `make demo-reset` do can be done by hand.
+
+### Run without make
+
+```bash
+cp .env.example .env              # then fill it in (below)
+docker compose up --build -d      # same as make up
+docker compose down               # same as make down
+```
+
+### Fill in `.env` by hand
+
+Open `.env` in any editor and set:
+
+- `LD_SDK_KEY` and `LD_CLIENT_SIDE_ID`: LaunchDarkly > **gear icon > Organization settings > SDK keys** > your project > **Production**. Click the eye icon to reveal a key and the clipboard icon to copy it.
+- `LD_API_TOKEN`: only needed for the scripts (see [Setup step 2](#2-create-a-launchdarkly-api-access-token)).
+- `LD_TRIGGER_URL`: shown once when you create the trigger (below). Lost it? Open the flag's trigger and choose **Reset URL**.
+- `ANTHROPIC_API_KEY`: optional, from console.anthropic.com.
+
+### Create the resources in the LaunchDarkly UI
+
+Create them in the **Production** environment of one project. Keys must match exactly.
+
+1. **Project:** gear icon > Projects > **Create project**, key `ld-sportsbook-demo` (or set `LD_PROJECT_KEY` to your key).
+2. **Flag `live-betting`:** **Create > Flag**, name `Live betting`, key `live-betting`, boolean, variations `Available` (true) and `Unavailable` (false), default on and off both **Unavailable**, available to **SDKs using client-side ID**. On the Targeting tab: **+ > Target individuals**, add `qa-tester` serving **Available**. Leave targeting **off**.
+3. **Flag `new-bet-slip`:** same steps, name `New bet slip`, key `new-bet-slip`, variations `New slip` (true) and `Classic slip` (false), defaults **Classic slip**, available to client-side SDKs. Targeting: individual target `qa-tester` serving **New slip**; **+ > Build a custom rule** named `Legal live-betting states`: context kind `user`, attribute `state`, operator `is one of`, values `NJ` and `NV`, serving **New slip**; default rule **Classic slip**. Turn targeting **on**.
+4. **Metric `bet-placed`:** **Metrics > Create metric**, LaunchDarkly hosted, event kind **Custom**, event key `bet-placed`, **Occurrence (Percent)**, analysis unit `user`, **higher is better**, name `Bet placed`.
+5. **AgentControl config `bet-assistant`:** **Agents > Configs > Completion**, name `Bet assistant`, key `bet-assistant`. Add two variations, both with model **Claude Haiku 4.5** (Anthropic) and parameter `max_tokens` = 300, each with one **system** message (the full prompts are below). Targeting: on, default rule a percentage rollout of 50% `Concise explainer` / 50% `Friendly coach`.
+6. **Trigger:** on `live-betting` > three-dot menu for Production > **Configuration in environment** > **Triggers** > **Add trigger** > **Generic trigger**, action **Turn off flag**. Copy the URL into `LD_TRIGGER_URL` right away.
+7. **Experiment (optional):** **Create > Experiment**, name `New bet slip vs classic`, flag `new-bet-slip`, rule `Legal live-betting states`, metric `bet-placed`, randomize by `user`, 50/50 with **Classic slip** as the control. Start it when you're ready to run `make simulate-bets`.
+
+<details>
+<summary>AgentControl config prompts</summary>
+
+**Concise explainer** (key `concise-explainer`):
+
+> You are the Kickoff Sportsbook bet assistant. Answer questions about odds, bet types, and payouts in 2 to 3 short sentences, in plain language. Use a concrete American-odds example when it helps. The bettor is in {{ ldctx.state }}. Never give picks or guarantee outcomes. If someone seems to be chasing losses, suggest setting a deposit limit.
+>
+> Never say whether betting is legal in a specific state or place. Say that availability depends on state law and point the bettor to their state's gaming regulator.
+
+**Friendly coach** (key `friendly-coach`):
+
+> You are Kickoff Sportsbook's friendly betting coach. Explain odds, bet types, and payouts warmly, as if talking to someone new to sports betting. Keep it under 120 words and end with one practical tip. The bettor is in {{ ldctx.state }}. Never give picks or guarantee outcomes, and remind people to bet responsibly.
+>
+> Never say whether betting is legal in a specific state or place. Say that availability depends on state law and point the bettor to their state's gaming regulator.
+
+</details>
+
+### Reset the demo by hand
+
+This is the starting state `make demo-reset` restores:
+
+- `live-betting`: targeting **off**, default rule and off variation **Unavailable**, `qa-tester` targeted to **Available**, no rules, trigger **enabled**.
+- `new-bet-slip`: targeting **on**, `qa-tester` gets **New slip**, rule `Legal live-betting states` serves **New slip**, default rule **Classic slip**. No experiment iteration running.
+- `bet-assistant`: targeting on, default rule 50/50.
+- If the app is running, turn the demo bug off: `curl -X POST -H "Content-Type: application/json" -d '{"enabled":false}' http://localhost:3000/api/demo/outage`
 
 ## Make commands
 
