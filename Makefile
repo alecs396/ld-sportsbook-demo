@@ -11,7 +11,7 @@ else
 RUN_NODE = docker compose run --rm --no-deps -v "$(CURDIR)/.env:/app/.env" -e SIM_BASE_URL=http://app:3000 \
 	-e LD_PROJECT_KEY -e LD_ENVIRONMENT -e SIM_BETTORS -e SIM_FIRST_BETTOR -e SIM_CHATS app node
 endif
-.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets simulate-chat doctor demo-reset bootstrap
+.PHONY: help install check-env dev build up down logs fire-trigger simulate simulate-outage simulate-bets simulate-chat doctor demo-reset bootstrap setup
 
 help: ## List available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -76,3 +76,7 @@ demo-reset: check-env ## Restore the demo's starting state in LaunchDarkly (safe
 bootstrap: ## Create all LaunchDarkly resources in LD_PROJECT_KEY (needs only LD_API_TOKEN; safe to rerun)
 	@test -f .env || cp .env.example .env
 	$(RUN_NODE) scripts/bootstrap.js
+
+setup: ## First-time setup: paste your keys (hidden) into .env, then run bootstrap
+	@sh scripts/setup-env.sh
+	@$(MAKE) --no-print-directory bootstrap

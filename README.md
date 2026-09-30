@@ -32,41 +32,44 @@ Stack: React (LaunchDarkly React SDK) + Node/Express (LaunchDarkly Node server S
 
 ## Setup
 
-### 1. Clone and create your `.env`
+### 1. Clone the repo
 
 ```bash
 git clone https://github.com/alecs396/ld-sportsbook-demo.git
 cd ld-sportsbook-demo
-cp .env.example .env
 ```
-
-`.env` is gitignored. `.env.example` explains every variable.
 
 ### 2. Create a LaunchDarkly API access token
 
-In LaunchDarkly: **gear icon > Authorization > Create token**, role **Writer**. Copy it (it's shown once) into `.env` as `LD_API_TOKEN`.
+You only need a LaunchDarkly account (a free trial works). **You don't need to create a project**: the next step creates one called `ld-sportsbook-demo` with everything the demo uses.
 
-### 3. Create the LaunchDarkly resources and fill in your keys
+1. Sign in to LaunchDarkly.
+2. Click the **gear icon** (Organization settings) in the left sidebar, then **Authorization**.
+3. Click **Create token**.
+4. **Name:** anything, for example `sportsbook-demo`. **Role:** **Writer** (enough to create the project, flags, and targeting).
+5. Click **Save token** and **copy it now**: LaunchDarkly shows it only once. It starts with `api-`.
+
+Each reviewer uses their own LaunchDarkly account: the demo is about changing flags and targeting yourself, and SDK keys are secrets that can't be shared.
+
+### 3. Run setup and paste your token
 
 ```bash
-make bootstrap
+make setup
 ```
 
-Using only the API token, this creates the project `ld-sportsbook-demo` (set `LD_PROJECT_KEY` in `.env` to use another key), both flags, the metric, the AgentControl config, and the trigger, then sets the demo's starting targeting. It also fills in `.env` for you, without printing any of the values:
+This creates `.env`, asks you to paste the API token (input is hidden, so it's never shown or saved in your shell history), optionally asks for an Anthropic API key for the bet assistant (press Enter to skip), and then runs `make bootstrap`.
+
+Bootstrap uses the token to create the project (set `LD_PROJECT_KEY` in `.env` first to use another key), both flags, the metric, the AgentControl config, and the trigger, then sets the demo's starting targeting. It also fills in the rest of `.env` for you, without printing any values:
 
 - `LD_SDK_KEY`: the **SDK key** for Production (secret, server only)
 - `LD_CLIENT_SIDE_ID`: the **client-side ID** for Production (public, used by the browser)
 - `LD_TRIGGER_URL`: the trigger's secret URL, which LaunchDarkly only shows once
 
-It never overwrites a value you've already set, and it's safe to run again: anything that exists is skipped. The keys also live in LaunchDarkly under **gear icon > Organization settings > SDK keys** if you'd rather copy them yourself.
-
-Each reviewer uses their own LaunchDarkly account: the demo is about changing flags and targeting, and the SDK key is a secret that can't be shared.
-
-Prefer to click through it yourself, or want to see exactly what it creates? See [LaunchDarkly resources](#launchdarkly-resources).
+It never overwrites a value you've already set, and both `make setup` and `make bootstrap` are safe to run again. Prefer to edit `.env` yourself? Copy `.env.example` to `.env`, fill in `LD_API_TOKEN`, and run `make bootstrap`. Want to see exactly what it creates, or click through it yourself? See [LaunchDarkly resources](#launchdarkly-resources).
 
 ### 4. Optional: the bet assistant
 
-Add an Anthropic API key to `.env` as `ANTHROPIC_API_KEY`. Without it, the chatbot says it isn't set up and everything else works.
+If you skipped it during setup, run `make setup` again (press Enter to keep your token) or add `ANTHROPIC_API_KEY` to `.env`. Without it, the chatbot says it isn't set up and everything else works.
 
 ### 5. Check everything and start the app
 
@@ -174,7 +177,8 @@ Flag keys in code carry a `// FLAG:` comment, and the SDK key location carries a
 |---|---|
 | `make up` / `make down` / `make logs` | Build and run the app in Docker, stop it, follow logs |
 | `make dev` | Hot-reload dev loop (needs Node 24): Vite on :5173, API on :3000 |
-| `make bootstrap` | Create all LaunchDarkly resources from `LD_API_TOKEN` |
+| `make setup` | First-time setup: paste your keys (hidden) into `.env`, then run bootstrap |
+| `make bootstrap` | Create all LaunchDarkly resources from `LD_API_TOKEN` and fill in `.env` |
 | `make doctor` | Pre-flight check: env vars, keys, SDK, resources, demo state, app |
 | `make demo-reset` | Restore the demo's starting state (safe to run repeatedly) |
 | `make fire-trigger` | Fire the `live-betting` turn-off trigger |
