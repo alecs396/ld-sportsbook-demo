@@ -5,7 +5,7 @@ import { ClassicBetSlip, NewBetSlip } from "./BetSlip.jsx";
 import { LiveBettingPanel, LiveBettingTeaser } from "./LiveBetting.jsx";
 import Toast from "./Toast.jsx";
 import ChatWidget from "./ChatWidget.jsx";
-import { DEMO_CHANNEL } from "./Presenter.jsx";
+import PresenterPanel from "./Presenter.jsx";
 
 export default function App({ config, personas, initialPersonaKey, storageKey }) {
   const [slip, setSlip] = useState([]);
@@ -26,15 +26,6 @@ export default function App({ config, personas, initialPersonaKey, storageKey })
   const newBetSlipEnabled = useBoolVariation("new-bet-slip", false);
 
   const { status, error } = useInitializationStatus();
-
-  // The presenter panel (/presenter) can switch this tab's persona.
-  useEffect(() => {
-    const channel = new BroadcastChannel(DEMO_CHANNEL);
-    channel.onmessage = (event) => {
-      if (event.data?.type === "persona") switchPersona(event.data.key);
-    };
-    return () => channel.close();
-  }, []);
 
   // Explicit listener for live-betting changes (Part 1). Streaming pushes the
   // change and this shows a toast. The hook above already swaps the panel.
@@ -140,43 +131,50 @@ export default function App({ config, personas, initialPersonaKey, storageKey })
         </label>
       </header>
 
-      <main className="layout">
-        <section className="games">
-          {/* New live betting panel when the flag is on, old teaser when off. */}
-          {liveBettingEnabled ? <LiveBettingPanel onPick={addPick} /> : <LiveBettingTeaser />}
+      {/* The page scrolls here, so the presenter panel stays docked below. */}
+      <div className="stage">
+        <div className="stage-scroll">
+          <main className="layout">
+            <section className="games">
+              {/* New live betting panel when the flag is on, old teaser when off. */}
+              {liveBettingEnabled ? <LiveBettingPanel onPick={addPick} /> : <LiveBettingTeaser />}
 
-          <h2>Featured games</h2>
-          {games.map((game) => (
-            <div className="game" key={game.id}>
-              <div className="game-meta">
-                <span>{game.league}</span>
-                <span>{game.kickoff}</span>
-              </div>
-              {["away", "home"].map((side) => (
-                <div className="game-row" key={side}>
-                  <span className="team">{game[side].team}</span>
-                  <button className="odds" onClick={() => addToSlip(game, side)}>
-                    {formatOdds(game[side].odds)}
-                  </button>
+              <h2>Featured games</h2>
+              {games.map((game) => (
+                <div className="game" key={game.id}>
+                  <div className="game-meta">
+                    <span>{game.league}</span>
+                    <span>{game.kickoff}</span>
+                  </div>
+                  {["away", "home"].map((side) => (
+                    <div className="game-row" key={side}>
+                      <span className="team">{game[side].team}</span>
+                      <button className="odds" onClick={() => addToSlip(game, side)}>
+                        {formatOdds(game[side].odds)}
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ))}
-            </div>
-          ))}
-        </section>
+            </section>
 
-        {newBetSlipEnabled ? (
-          <NewBetSlip slip={slip} onRemove={removeFromSlip} onPlaceBet={placeBet} />
-        ) : (
-          <ClassicBetSlip slip={slip} onRemove={removeFromSlip} onPlaceBet={placeBet} />
-        )}
-      </main>
+            {newBetSlipEnabled ? (
+              <NewBetSlip slip={slip} onRemove={removeFromSlip} onPlaceBet={placeBet} />
+            ) : (
+              <ClassicBetSlip slip={slip} onRemove={removeFromSlip} onPlaceBet={placeBet} />
+            )}
+          </main>
 
-      <Toast message={notice} onClose={closeNotice} />
-      <ChatWidget userKey={personaKey} />
+          <footer className="footer muted">
+            LaunchDarkly client-side ID: {config.clientSideId ? "loaded" : "missing (check .env)"}
+          </footer>
+        </div>
 
-      <footer className="footer muted">
-        LaunchDarkly client-side ID: {config.clientSideId ? "loaded" : "missing (check .env)"}
-      </footer>
+        <Toast message={notice} onClose={closeNotice} />
+        <ChatWidget userKey={personaKey} />
+      </div>
+
+      <PresenterPanel personas={personas} personaKey={personaKey} onSelectPersona={switchPersona} />
     </div>
   );
 }

@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useBoolVariationDetail, useLDClient } from "@launchdarkly/react-sdk";
+import { useBoolVariationDetail } from "@launchdarkly/react-sdk";
 
-// Presenter panel (/presenter): demo controls, kept off the customer site.
-// Picking a persona here also switches any open customer tab, over a
-// BroadcastChannel (browser tabs on the same site, no server involved).
-export const DEMO_CHANNEL = "sportsbook-demo";
+// Presenter panel: demo controls docked under the sportsbook, so one window
+// shows the app and why each flag has its value. Not part of the customer site.
 
+// FLAG: both flags must exist in your LaunchDarkly project (see README).
 const FLAGS = ["live-betting", "new-bet-slip"];
 
 // Evaluation reasons explain why a context got its value.
@@ -39,57 +38,39 @@ function FlagRow({ flagKey }) {
   );
 }
 
-export default function Presenter({ personas, initialPersonaKey }) {
-  const ldClient = useLDClient();
-  const [current, setCurrent] = useState(initialPersonaKey);
-
-  async function selectPersona(key) {
-    const persona = personas.find((p) => p.key === key);
-    if (!persona) return;
-    try {
-      await ldClient.identify(persona);
-    } catch (err) {
-      console.error(`Could not switch LaunchDarkly context to ${key}`, err);
-    }
-    setCurrent(key);
-
-    const channel = new BroadcastChannel(DEMO_CHANNEL);
-    channel.postMessage({ type: "persona", key });
-    channel.close();
-  }
+// The persona lives in App, so switching here is the same identify() call as
+// the header dropdown.
+export default function PresenterPanel({ personas, personaKey, onSelectPersona }) {
+  const [open, setOpen] = useState(true);
 
   return (
-    <div className="presenter">
-      <header className="header">
-        <span className="logo">Presenter panel</span>
-        <a className="muted" href="/" target="_blank" rel="noreferrer">
-          Open customer site
-        </a>
+    <section className="presenter" aria-label="Presenter panel">
+      <header className="presenter-header">
+        <span className="presenter-label">Presenter panel</span>
+        <span className="muted">Demo controls, not part of the customer site</span>
+        <button className="presenter-toggle" onClick={() => setOpen(!open)}>
+          {open ? "Hide" : "Show"}
+        </button>
       </header>
 
-      <main className="presenter-body">
-        <section>
-          <h2>Personas</h2>
+      {open && (
+        <div className="presenter-body">
           <div className="persona-buttons">
             {personas.map((p) => (
               <button
                 key={p.key}
-                className={p.key === current ? "persona-button active" : "persona-button"}
-                onClick={() => selectPersona(p.key)}
+                className={p.key === personaKey ? "persona-button active" : "persona-button"}
+                onClick={() => onSelectPersona(p.key)}
               >
                 <strong>{p.name}</strong>
                 <span className="muted">
                   {p.state} · {p.tier}
                   {p.isInternal ? " · QA" : ""}
                 </span>
-                <code className="muted">{p.key}</code>
               </button>
             ))}
           </div>
-        </section>
 
-        <section>
-          <h2>Flag values for {current}</h2>
           <table className="flag-table">
             <thead>
               <tr>
@@ -104,9 +85,8 @@ export default function Presenter({ personas, initialPersonaKey }) {
               ))}
             </tbody>
           </table>
-          <p className="muted">Values update live when flags change in LaunchDarkly.</p>
-        </section>
-      </main>
-    </div>
+        </div>
+      )}
+    </section>
   );
 }

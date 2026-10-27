@@ -157,7 +157,7 @@ async function checkApp() {
     const res = await fetch(`${url}/healthz`);
     const health = await res.json();
     health.launchdarkly?.initialized
-      ? pass(`App is running and its SDK is initialized. Open ${browserUrl} (presenter: ${browserUrl}/presenter)`)
+      ? pass(`App is running and its SDK is initialized. Open ${browserUrl}`)
       : warn(`App is running at ${browserUrl} but its SDK is not initialized`);
   } catch {
     warn(`App is not running (start it with make up, then open ${browserUrl})`);
