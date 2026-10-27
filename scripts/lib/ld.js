@@ -16,6 +16,8 @@ export const RESOURCES = {
   triggerFlag: "live-betting",
   qaTester: "qa-tester",
   legalStates: ["NJ", "NV"],
+  // live-betting's state rule serves false to these states.
+  blockedStates: ["CA"],
 };
 
 // Calls the REST API. Returns { status, body } and never throws on HTTP errors,

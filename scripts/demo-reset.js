@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { api, ENVIRONMENT, PROJECT, RESOURCES, variationId, variationValue } from "./lib/ld.js";
 
 const COMMENT = "make demo-reset: restore demo starting state";
-const { qaTester, legalStates } = RESOURCES;
+const { qaTester, legalStates, blockedStates } = RESOURCES;
 let errors = 0;
 
 async function patchFlag(key, instructions) {
@@ -45,11 +45,20 @@ async function resetLiveBetting() {
   const { flag, env } = found;
   const [on, off] = [variationId(flag, true), variationId(flag, false)];
 
+  const rules = env.rules ?? [];
+  const clause = rules[0]?.clauses?.[0];
   const inStartingState =
     !env.on &&
     variationValue(flag, env.offVariation) === false &&
     variationValue(flag, env.fallthrough?.variation) === false &&
-    (env.rules ?? []).length === 0 &&
+    rules.length === 1 &&
+    variationValue(flag, rules[0].variation) === false &&
+    rules[0].clauses?.length === 1 &&
+    clause.attribute === "state" &&
+    clause.op === "in" &&
+    !clause.negate &&
+    clause.values.length === blockedStates.length &&
+    blockedStates.every((s) => clause.values.includes(s)) &&
     qaTargetedTo(flag, env, true);
 
   if (inStartingState) {
@@ -59,11 +68,20 @@ async function resetLiveBetting() {
       { kind: "turnFlagOff" },
       { kind: "updateOffVariation", variationId: off },
       { kind: "updateFallthroughVariationOrRollout", variationId: off },
-      { kind: "replaceRules", rules: [] },
+      {
+        kind: "replaceRules",
+        rules: [
+          {
+            description: RESOURCES.legalStatesRule,
+            variationId: off,
+            clauses: [{ contextKind: "user", attribute: "state", op: "in", values: blockedStates, negate: false }],
+          },
+        ],
+      },
       { kind: "replaceTargets", targets: [{ contextKind: "user", variationId: on, values: [qaTester] }] },
     ])
   ) {
-    console.log(`  ✓ Reset: targeting off, default false, "${qaTester}" gets true`);
+    console.log(`  ✓ Reset: targeting off, ${blockedStates.join("/")} blocked, default false, "${qaTester}" gets true`);
   }
 
   const triggers = await api(`/flags/${PROJECT}/${RESOURCES.triggerFlag}/triggers/${ENVIRONMENT}`);
