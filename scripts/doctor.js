@@ -121,6 +121,15 @@ function checkDemoState(flags) {
       (t) => variationValue(flag, t.variation) === true && t.values.includes(RESOURCES.qaTester),
     );
     qaTrue ? pass(`"${RESOURCES.qaTester}" is targeted to true on "live-betting"`) : warn(`"${RESOURCES.qaTester}" is not targeted to true on "live-betting"`);
+    const blockRule = live.rules?.some(
+      (r) =>
+        variationValue(flag, r.variation) === false &&
+        r.clauses?.some((c) => c.attribute === "state" && RESOURCES.blockedStates.every((s) => c.values.includes(s))),
+    );
+    const blocked = RESOURCES.blockedStates.join(", ");
+    blockRule
+      ? pass(`"live-betting" has the state rule (blocks ${blocked})`)
+      : warn(`"live-betting" is missing the state rule that blocks ${blocked}`);
   }
 
   const slip = flags["new-bet-slip"]?.environments?.[ENVIRONMENT];

@@ -287,7 +287,7 @@ Click **Ask the bet assistant** (bottom left). The server gets the `bet-assistan
 
 | Key | Type | Settings |
 | --- | --- | --- |
-| `live-betting` | Boolean flag | Variations "Available" (true) / "Unavailable" (false). Available to client-side SDKs. Default on and off: false. Individual target `qa-tester` gets true. Turn-off trigger (generic). Starting state: targeting off. |
+| `live-betting` | Boolean flag | Variations "Available" (true) / "Unavailable" (false). Available to client-side SDKs. Default on and off: false. Individual target `qa-tester` gets true. Rule "Legal live-betting states": `state` is one of `CA` serves false. Turn-off trigger (generic). Starting state: targeting off. |
 | `new-bet-slip` | Boolean flag | Variations "New slip" (true) / "Classic slip" (false). Available to client-side SDKs. Individual target `qa-tester` gets true. Rule "Legal live-betting states": `state` is one of `NJ`, `NV` serves true. Default rule: false. Targeting on. |
 | `bet-placed` | Metric | Custom conversion (Occurrence), event key `bet-placed`, higher is better, randomized by `user`. |
 | `new-bet-slip-vs-classic` | Experiment | On `new-bet-slip`'s rule "Legal live-betting states", metric `bet-placed`, randomized by `user`, 50/50, Classic slip as control. Created but not started. |
@@ -322,7 +322,7 @@ Open `.env` in any editor and set:
 Create them in the **Production** environment of one project. Keys must match exactly.
 
 1. **Project:** gear icon > Projects > **Create project**, key `ld-sportsbook-demo` (or set `LD_PROJECT_KEY` to your key).
-2. **Flag `live-betting`:** **Create > Flag**, name `Live betting`, key `live-betting`, boolean, variations `Available` (true) and `Unavailable` (false), default on and off both **Unavailable**, available to **SDKs using client-side ID**. On the Targeting tab: **+ > Target individuals**, add `qa-tester` serving **Available**. Leave targeting **off**.
+2. **Flag `live-betting`:** **Create > Flag**, name `Live betting`, key `live-betting`, boolean, variations `Available` (true) and `Unavailable` (false), default on and off both **Unavailable**, available to **SDKs using client-side ID**. On the Targeting tab: **+ > Target individuals**, add `qa-tester` serving **Available**. Then **+ > Build a custom rule** named `Legal live-betting states`: context kind `user`, attribute `state`, operator `is one of`, value `CA`, serving **Unavailable**. Leave targeting **off**.
 3. **Flag `new-bet-slip`:** same steps, name `New bet slip`, key `new-bet-slip`, variations `New slip` (true) and `Classic slip` (false), defaults **Classic slip**, available to client-side SDKs. Targeting: individual target `qa-tester` serving **New slip**; **+ > Build a custom rule** named `Legal live-betting states`: context kind `user`, attribute `state`, operator `is one of`, values `NJ` and `NV`, serving **New slip**; default rule **Classic slip**. Turn targeting **on**.
 4. **Metric `bet-placed`:** **Metrics > Create metric**, LaunchDarkly hosted, event kind **Custom**, event key `bet-placed`, **Occurrence (Percent)**, analysis unit `user`, **higher is better**, name `Bet placed`.
 5. **AgentControl config `bet-assistant`:** **Agents > Configs > Completion**, name `Bet assistant`, key `bet-assistant`. Add two variations, both with model **Claude Haiku 4.5** (Anthropic) and parameter `max_tokens` = 300, each with one **system** message (the full prompts are below). Targeting: on, default rule a percentage rollout of 50% `Concise explainer` / 50% `Friendly coach`.
@@ -350,7 +350,7 @@ Create them in the **Production** environment of one project. Keys must match ex
 
 This is the starting state `make demo-reset` restores:
 
-- `live-betting`: targeting **off**, default rule and off variation **Unavailable**, `qa-tester` targeted to **Available**, no rules, trigger **enabled**.
+- `live-betting`: targeting **off**, default rule and off variation **Unavailable**, `qa-tester` targeted to **Available**, rule `Legal live-betting states` (`state` is one of `CA`) serves **Unavailable**, trigger **enabled**.
 - `new-bet-slip`: targeting **on**, `qa-tester` gets **New slip**, rule `Legal live-betting states` serves **New slip**, default rule **Classic slip**. No experiment iteration running.
 - `bet-assistant`: targeting on, default rule 50/50.
 - If the app is running, turn the demo bug off: `curl -X POST -H "Content-Type: application/json" -d '{"enabled":false}' http://localhost:3000/api/demo/outage`
