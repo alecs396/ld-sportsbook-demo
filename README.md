@@ -371,7 +371,7 @@ This is the starting state `make demo-reset` restores:
 | `make simulate-bets` | Experiment traffic for `new-bet-slip` |
 | `make simulate-chat` | Bet assistant traffic with simulated feedback (calls Claude) |
 
-Scripts and simulators run with local Node when it's installed, and inside the app image otherwise. Force the Docker path with `DOCKER=1`, for example `make doctor DOCKER=1`.
+Scripts and simulators run with local Node when Node and the npm dependencies are installed (after `make install` or `make dev`), and inside the app image otherwise, so the setup steps above always use Docker. Force the Docker path with `DOCKER=1`, for example `make doctor DOCKER=1`.
 
 ## Architecture
 
@@ -412,4 +412,5 @@ Run `make doctor` first; it pinpoints most problems.
 - **Flags always false:** the key is from the wrong environment or project, or the flag isn't available to client-side SDKs. `make doctor` checks both.
 - **"LaunchDarkly client-side ID is missing":** set `LD_CLIENT_SIDE_ID` in `.env` and restart.
 - **Bet assistant unavailable:** check `ANTHROPIC_API_KEY` and that the `bet-assistant` config's targeting is on.
+- **A `make` script fails with a Node error** (for example an unknown `--env-file-if-exists` option or a missing module): your local Node is older than 24 or the dependencies are stale. Add `DOCKER=1` to run it in the app image instead, for example `make doctor DOCKER=1`.
 - **Port already in use:** stop `make dev` or other apps on 3000/5173, or run `make down`.
