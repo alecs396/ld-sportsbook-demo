@@ -42,13 +42,13 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 
 | What | Where |
 | --- | --- |
-| Start the SDK with the client-side ID and initial context | [client/src/main.jsx#L67](client/src/main.jsx#L67) |
+| Start the SDK with the client-side ID and initial context | [client/src/main.jsx#L65](client/src/main.jsx#L65) |
 | Evaluate `live-betting` and `new-bet-slip` with hooks | [client/src/App.jsx#L20](client/src/App.jsx#L20) |
 | Wait for initialization (no flicker) | [client/src/App.jsx#L28](client/src/App.jsx#L28) |
-| Explicit change listener for `live-betting` (Part 1) | [client/src/App.jsx#L57](client/src/App.jsx#L57) |
-| `identify()` when the persona changes (Part 2) | [client/src/App.jsx#L103](client/src/App.jsx#L103) |
-| `track("bet-placed")` when a bet is placed (experiment) | [client/src/App.jsx#L122](client/src/App.jsx#L122) |
-| Values with evaluation reasons (presenter panel) | [client/src/Presenter.jsx#L30](client/src/Presenter.jsx#L30) |
+| Explicit change listener for `live-betting` (Part 1) | [client/src/App.jsx#L48](client/src/App.jsx#L48) |
+| `identify()` when the persona changes (Part 2) | [client/src/App.jsx#L94](client/src/App.jsx#L94) |
+| `track("bet-placed")` when a bet is placed (experiment) | [client/src/App.jsx#L113](client/src/App.jsx#L113) |
+| Values with evaluation reasons (presenter panel) | [client/src/Presenter.jsx#L29](client/src/Presenter.jsx#L29) |
 
 **Contexts:** the demo personas and simulated bettors, with custom attributes and `name` marked private, are in [server/personas.js](server/personas.js).
 
@@ -149,7 +149,7 @@ This builds and starts the app in Docker. When it prints `App: http://localhost:
 | Page | Link | What it's for |
 | --- | --- | --- |
 | **Sportsbook** | <http://localhost:3000> | The customer site, signed in as Cody (NJ) |
-| **Presenter panel** | <http://localhost:3000/presenter> | One-click personas and live flag values with the reason for each |
+| **Presenter panel** | Docked at the bottom of the sportsbook | One-click personas and live flag values with the reason for each. **Hide** collapses it for a clean customer view |
 | **Sportsbook as QA** | <http://localhost:3000/?as=qa-tester> | The QA tester's view (Peter), for testing in production |
 
 Always use `localhost` in your browser. (If `make doctor` mentions `http://app:3000`, that's the address containers use to reach each other inside Docker; it doesn't work in a browser.)
@@ -189,13 +189,9 @@ Before each run-through, restore the starting state:
 make demo-reset
 ```
 
-Then open three windows side by side:
+Then open the sportsbook as the NJ customer: <http://localhost:3000/?as=new-jersey-user>. The presenter panel at the bottom of the page switches personas (click **Peter** for the QA view) and shows why each flag has its value.
 
-1. **Customer:** <http://localhost:3000/?as=new-jersey-user>
-2. **QA tester:** <http://localhost:3000/?as=qa-tester>
-3. **Presenter panel:** <http://localhost:3000/presenter> (clicking a persona here also switches the customer window)
-
-Keep LaunchDarkly open in a fourth window.
+Keep LaunchDarkly open next to it.
 
 > [!IMPORTANT]
 > **Stay in the Production environment for the whole demo.** The app uses Production's keys, so it only reacts to changes made in Production. If you change a flag while the LaunchDarkly UI is showing Test (or any other environment), nothing changes in the app. Check the environment selector says **Production** before every change.
@@ -234,7 +230,7 @@ _In LaunchDarkly, make sure you're in the **Production** environment._
 _In LaunchDarkly, make sure you're in the **Production** environment._
 
 
-Switch personas with the dropdown in the header or the presenter panel. Each switch calls `identify()`, so flags re-evaluate with no reload.
+Switch personas with the dropdown in the header or the presenter panel at the bottom of the page. Each switch calls `identify()`, so flags re-evaluate with no reload.
 
 | Persona | Context | Bet slip | Why |
 | --- | --- | --- | --- |

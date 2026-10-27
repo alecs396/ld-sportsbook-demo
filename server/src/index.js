@@ -146,7 +146,7 @@ app.use("/api", (req, res) => {
 const clientDist = path.resolve(import.meta.dirname, "../../client/dist");
 if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
-  // Let React handle any other path (e.g. /presenter)
+  // Let React handle any other path
   app.get("/{*splat}", (req, res) => {
     res.sendFile(path.join(clientDist, "index.html"));
   });
