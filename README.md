@@ -48,7 +48,7 @@ All LaunchDarkly code is in the files below; links go to the exact lines. Search
 | Explicit change listener for `live-betting` (Part 1) | [client/src/App.jsx#L48](client/src/App.jsx#L48) |
 | `identify()` when the persona changes (Part 2) | [client/src/App.jsx#L94](client/src/App.jsx#L94) |
 | `track("bet-placed")` when a bet is placed (experiment) | [client/src/App.jsx#L113](client/src/App.jsx#L113) |
-| Values with evaluation reasons (presenter panel) | [client/src/Presenter.jsx#L29](client/src/Presenter.jsx#L29) |
+| Values with evaluation reasons (presenter panel) | [client/src/Presenter.jsx#L39](client/src/Presenter.jsx#L39) |
 
 **Contexts:** the demo personas and simulated bettors, with custom attributes and `name` marked private, are in [server/personas.js](server/personas.js).
 

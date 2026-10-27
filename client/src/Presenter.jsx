@@ -7,13 +7,23 @@ import { useBoolVariationDetail } from "@launchdarkly/react-sdk";
 // FLAG: both flags must exist in your LaunchDarkly project (see README).
 const FLAGS = ["live-betting", "new-bet-slip"];
 
+// A rule match only tells the SDK the rule's position and ID, not its name,
+// so the names live here. Keep them in the same order as the rules in
+// LaunchDarkly (demo-reset restores this order).
+const RULE_NAMES = {
+  "live-betting": ["Legal live-betting states"],
+  "new-bet-slip": ["Legal live-betting states"],
+};
+
 // Evaluation reasons explain why a context got its value.
-function describeReason(reason) {
+function describeReason(flagKey, reason) {
   switch (reason?.kind) {
     case "TARGET_MATCH":
       return "Individual target";
-    case "RULE_MATCH":
-      return `Rule ${reason.ruleIndex + 1}`;
+    case "RULE_MATCH": {
+      const name = RULE_NAMES[flagKey]?.[reason.ruleIndex];
+      return name ?? `Rule ${reason.ruleIndex + 1}`;
+    }
     case "FALLTHROUGH":
       return "Default rule";
     case "OFF":
@@ -33,7 +43,7 @@ function FlagRow({ flagKey }) {
         <code>{flagKey}</code>
       </td>
       <td className={value ? "on" : "off"}>{value ? "true" : "false"}</td>
-      <td>{describeReason(reason)}</td>
+      <td>{describeReason(flagKey, reason)}</td>
     </tr>
   );
 }
